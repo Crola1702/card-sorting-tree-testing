@@ -1,0 +1,104 @@
+name: CI and deploy
+
+# Pull requests: run every test. Push to main: test, apply migrations to Supabase, deploy to GitHub Pages.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false # never cut a migration or deploy in half
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx tsc
+      - run: npm test
+
+  test-db:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Only the services the tests need: Postgres, PostgREST, gateway, Auth (for the keys), Edge Runtime.
+      - run: npx supabase start -x realtime,storage-api,imgproxy,logflare,vector,supavisor,studio,postgres-meta,mailpit
+      - name: RLS tests in SQL (pgTAP)
+        run: npx supabase test db
+      - name: Serve the Edge Function with a throwaway badge key
+        run: |
+          npm run badge:keygen
+          npx supabase functions serve --env-file .secrets/badge.env > functions.log 2>&1 &
+          curl -s -o /dev/null --retry 40 --retry-all-errors --retry-delay 2 -X OPTIONS http://127.0.0.1:54321/functions/v1/completion-token
+      - name: API tests with the public keys (RLS, GraphQL, completion token)
+        run: |
+          eval "$(npx supabase status -o env | grep -E '^(API_URL|DB_URL|ANON_KEY|PUBLISHABLE_KEY)=')"
+          export API_URL ANON_KEY PUBLISHABLE_KEY
+          set -a; . .secrets/badge.env; set +a
+          # Enabled here only so the GraphQL leak check is meaningful.
+          psql "$DB_URL" -c 'create extension if not exists pg_graphql;'
+          npm run test:api
+      - if: failure()
+        run: cat functions.log
+
+  migrate:
+    needs: [test, test-db]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx supabase link --project-ref "${{ vars.SUPABASE_PROJECT_REF }}"
+      - run: npx supabase db push
+      # Secrets are set once by hand (README "Badge claim"); this only ships the code.
+      - run: npx supabase functions deploy completion-token
+
+  deploy:
+    needs: migrate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          # Repository variables (not secrets): both values are public by design.
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+      - id: deployment
+        uses: actions/deploy-pages@v4

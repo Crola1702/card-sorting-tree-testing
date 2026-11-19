@@ -1,0 +1,17 @@
+{
+  "kind": "card_sort",
+  "title": "¿Cómo organizarías el sitio de tu rama IEEE?",
+  "intro": "Te mostraremos temas que suelen aparecer en el sitio web de una rama estudiantil.\nAgrúpalos como tenga sentido para ti y ponle nombre a cada grupo.",
+  "cards": [
+    { "id": "c01", "label": "Renovar membresía" },
+    { "id": "c02", "label": "Becas y premios" },
+    { "id": "c03", "label": "Calendario de eventos" },
+    { "id": "c04", "label": "Sociedades técnicas" },
+    { "id": "c05", "label": "Voluntariado" },
+    { "id": "c06", "label": "Directiva de la rama" },
+    { "id": "c07", "label": "Concursos de programación" },
+    { "id": "c08", "label": "Certificados de participación" },
+    { "id": "c09", "label": "Acceso a IEEE Xplore" },
+    { "id": "c10", "label": "Contacto" }
+  ]
+}

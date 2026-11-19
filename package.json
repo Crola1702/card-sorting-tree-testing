@@ -1,0 +1,25 @@
+{
+  "name": "card-sorting-tree-testing",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build --base=./",
+    "test": "node --test \"src/**/*.test.ts\" tests/completion-token.test.ts",
+    "badge:keygen": "node scripts/generate-badge-key.mjs",
+    "test:db": "supabase test db",
+    "test:api": "node --test tests/rls-api.test.ts tests/completion-token-api.test.ts",
+    "export": "node scripts/export.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.119.1",
+    "sortablejs": "^1.15.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/sortablejs": "^1.15.9",
+    "supabase": "^3.2.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8"
+  }
+}
