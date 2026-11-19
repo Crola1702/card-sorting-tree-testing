@@ -47,15 +47,15 @@ node,ayuda/faq,ayuda,Preguntas frecuentes,
 node,ayuda/herramientas-y-marca,ayuda,Herramientas y marca,
 node,ayuda/enlaces,ayuda,Enlaces oficiales,
 task,t01,,Quieres saber si tu universidad tiene una Rama Estudiantil IEEE.,empezar/unirse
-task,t02,,Eres el nuevo tesorero de tu Rama y quieres cobrar el rebate que le corresponde.,dinero/rebate
-task,t03,,Necesitas saber hasta cuándo puedes entregar el Plan Anual de tu Rama.,operar/reportes
-task,t04,,Ya hiciste un evento y debes reportar la asistencia.,eventos/reportar-evento
-task,t05,,Quieres invitar a un conferencista distinguido para una charla de tu Capítulo.,eventos/conseguir-ponentes
-task,t06,,Varios miembros de tu Rama no renovaron su membresía y quieres recuperarlos.,membresia/plan-de-captacion
+task,t02,,Llevas las cuentas de tu Rama y sabes que IEEE le devuelve una parte de lo que pagan sus afiliados. Quieres saber cómo recibir esa devolución.,dinero/rebate
+task,t03,,"Tu Rama debe entregar a comienzo de año un documento con lo que piensa hacer, y no sabes hasta qué día tienes.",operar/reportes
+task,t04,,Hace una semana tu Rama dio un taller y te piden dejar constancia en el sistema de IEEE de cuántas personas fueron.,eventos/reportar-evento
+task,t05,,Tu comunidad técnica dentro de IEEE quiere traer a un experto de renombre para que dé una charla.,eventos/conseguir-ponentes
+task,t06,,Este año varias personas de tu Rama no volvieron a pagar su afiliación a IEEE y quieres que regresen.,membresia/plan-de-captacion
 task,t07,,"En tu perfil de IEEE apareces como Member y no como Student Member, y quieres corregirlo.",membresia/anio-de-membresia
 task,t08,,"En un correo leíste ""OU Analytics"" y no sabes qué significa.",aprender/glosario
-task,t10,,Acabas de asumir como Vicepresidente de tu Rama y no sabes por dónde empezar.,mi-cargo/primer-mes|mi-cargo/vicepresidente
-task,t11,,Quieres postular a tu Rama a un premio.,premios/premios-sac-colombia
-task,t12,,Se acerca el fin de tu periodo: hay que elegir la nueva junta y entregarle el cargo.,operar/elecciones-y-transicion
-task,t13,,Quieres ver qué cursos del CLE se recomiendan para el cargo de tesorero.,mi-cargo/tesorero|aprender/formacion-por-cargo
-task,t14,,El Consejero de tu Rama no responde y no sabes a quién escribirle.,ayuda/contacto
+task,t10,,Te acaban de elegir para el segundo puesto más importante de tu Rama y no sabes qué hacer primero.,mi-cargo/primer-mes|mi-cargo/vicepresidente
+task,t11,,Tu Rama hizo un gran trabajo este año y quieres presentarla a una convocatoria donde IEEE destaca a las mejores del país.,premios/premios-sac-colombia
+task,t12,,Se acaba tu periodo al frente de la Rama: hay que escoger quiénes siguen y dejarles todo listo.,operar/elecciones-y-transicion
+task,t13,,Llevas las cuentas de tu Rama y quieres saber qué te recomienda IEEE para prepararte gratis en esa tarea.,mi-cargo/tesorero|aprender/formacion-por-cargo
+task,t14,,La profesora que acompaña a tu Rama no contesta tus mensajes y no sabes a quién más acudir.,ayuda/contacto
