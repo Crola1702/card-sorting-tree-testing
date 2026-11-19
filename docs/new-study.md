@@ -2,9 +2,9 @@
 
 No code changes. You need write access to the GitHub repository.
 
-1. **Copy an example** from `public/studies/`:
-   - Card sort: `ejemplo-card-sort.json`
-   - Tree test: `ejemplo-tree-test.csv` (you can edit it in Excel or Google Sheets)
+1. **Copy an existing study** from `public/studies/` as a template:
+   - Card sort: `tarjetas-wiki.json`
+   - Tree test: `arbol-a.csv` (you can edit it in Excel or Google Sheets)
 2. **Rename it.** The file name becomes the link: `becas-2027.csv` → `…/#/s/becas-2027`.
    Use only letters, digits, `-` and `_`.
 3. **Edit the content**:
