@@ -22,5 +22,7 @@ No code changes. You need write access to the GitHub repository.
 Tips:
 
 - Do not change ids once participants have started; results reference them.
+- To compare two versions (A/B), create both study files and a small split file that points to them
+  (see "Split link" in the README). Share only the split link.
 - To close a study, delete its file. Collected answers stay in the database.
 - Export results with `npm run export` (see the README).

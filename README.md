@@ -256,6 +256,19 @@ A broken file shows the exact validation error on that link.
   "tasks": [{ "id": "t1", "text": "¿Dónde renovarías tu membresía?", "correct": ["mem-ren"] }] }
 ```
 
+### Split link (A/B test)
+
+One shared link that sends each participant to one of several studies at random (equal chance per browser,
+not balanced). The choice is remembered in that browser, so a reload never shows the other variant.
+The stored `study_id` is the variant, so results can be compared directly.
+
+```json
+{ "kind": "split", "variants": ["arbol-a", "arbol-b"] }
+```
+
+Give both variants the same title and intro so participants cannot tell which one they got. To try a specific
+variant yourself, open its own link (`#/s/arbol-a`), or the split link in a private window to draw again.
+
 ### CSV
 
 Columns `type,id,parent,text,correct` (`,` or `;` separator; "CSV UTF-8" from Excel works).
@@ -273,6 +286,25 @@ Columns `type,id,parent,text,correct` (`,` or `;` separator; "CSV UTF-8" from Ex
 A file with `card` rows is a card sort; with `node` rows, a tree test.
 
 Limits (enforced on load so answers are never rejected on submit): ids 100 chars, labels 300, task text 1000.
+
+## Current studies
+
+Built from the wiki's `mkdocs.yml` and `VALIDACION.md` (IEEEStudentsHandbook repo), 2026-11-19.
+
+| Link | File | What |
+|---|---|---|
+| `#/s/tarjetas-wiki` | `tarjetas-wiki.json` | Open card sort, 35 cards: every content page of the new structure plus "¿Qué es IEEE?" (card id = page path) |
+| `#/s/arbol-wiki` | `arbol-wiki.json` | Split link: half go to `arbol-a`, half to `arbol-b` |
+| (variant) | `arbol-a.csv` | **New** navigation (wiki commits 6624dcb, e6495b0): 44 nodes, 10 sections |
+| (variant) | `arbol-b.csv` | **Old** navigation (baseline, wiki commit 8fd2d80): 34 nodes, 4 sections |
+
+Both trees share the same 13 tasks, numbered as in `VALIDACION.md` (`t01` to `t14`). Task 9 ("create an Affinity
+Group") is left out because the old tree has no correct answer for it, which would bias the comparison.
+Section nodes count as answers because in the wiki each section is its own overview page. The wiki's home page
+("Inicio") is not a node. Targets from `VALIDACION.md`: at least 80% success and 60% direct (no backtracking).
+
+Recruit separate people for the card sort and the tree test: seeing the card labels first would prime the tree
+test in favor of the new structure.
 
 ## Recorded data
 

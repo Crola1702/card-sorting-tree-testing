@@ -1,0 +1,51 @@
+type,id,parent,text,correct
+title,,,Encuentra información en la wiki de Ramas Estudiantiles,
+intro,,,"Te mostraremos el menú de la wiki de Ramas Estudiantiles IEEE Colombia, solo con texto, y te pediremos encontrar varias cosas.
+Navega como lo harías normalmente. Cuando creas que llegaste al lugar correcto, toca ""Aquí lo encontraría"". Puedes volver atrás cuantas veces quieras. No hay respuestas incorrectas: estamos evaluando la wiki, no a ti.",
+node,conoce-ieee,,Conoce IEEE,
+node,conoce-ieee/unirse,conoce-ieee,Cómo unirse a IEEE,
+node,conoce-ieee/seccion-colombia,conoce-ieee,IEEE Sección Colombia,
+node,conoce-ieee/glosario,conoce-ieee,Glosario,
+node,cargos,,Cargos,
+node,cargos/presidente-rama,cargos,Presidente de Rama,
+node,cargos/presidente-capitulo,cargos,Presidente de Capítulo,
+node,cargos/presidente-grupo-afinidad,cargos,Presidente de Grupo de Afinidad,
+node,cargos/vicepresidente,cargos,Vicepresidente,
+node,cargos/secretario,cargos,Secretario,
+node,cargos/tesorero,cargos,Tesorero,
+node,cargos/consejero,cargos,Consejero de Rama,
+node,operacion,,Operación,
+node,operacion/requisitos,operacion,Requisitos de una Rama,
+node,operacion/reportes,operacion,Reportes y fechas límite,
+node,operacion/organizar-evento,operacion,Organizar un evento,
+node,operacion/reportar-evento,operacion,Reportar un evento en vTools,
+node,operacion/membresia,operacion,Año de membresía,
+node,operacion/captacion,operacion,Captación y retención de miembros,
+node,operacion/junta-directiva,operacion,Junta directiva y funciones,
+node,operacion/capitulos,operacion,Capítulos y Grupos de Afinidad,
+node,operacion/crear-capitulo,operacion,Cómo crear un Capítulo,
+node,operacion/elecciones,operacion,Elecciones,
+node,operacion/empalme,operacion,Transición de la junta (empalme),
+node,recursos,,Recursos,
+node,recursos/herramientas,recursos,Herramientas digitales,
+node,recursos/fondos,recursos,Rebates y financiación,
+node,recursos/premios,recursos,Premios y concursos,
+node,recursos/capacitacion,recursos,Capacitación,
+node,recursos/cursos-cle,recursos,Cursos del CLE,
+node,recursos/marca,recursos,Marca y comunicación,
+node,recursos/contacto,recursos,¿A quién preguntar?,
+node,recursos/faq,recursos,Preguntas frecuentes,
+node,recursos/enlaces,recursos,Todos los enlaces,
+task,t01,,Quieres saber si tu universidad tiene una Rama Estudiantil IEEE.,conoce-ieee/unirse
+task,t02,,Eres el nuevo tesorero de tu Rama y quieres cobrar el rebate que le corresponde.,recursos/fondos
+task,t03,,Necesitas saber hasta cuándo puedes entregar el Plan Anual de tu Rama.,operacion/reportes
+task,t04,,Ya hiciste un evento y debes reportar la asistencia.,operacion/reportar-evento
+task,t05,,Quieres invitar a un conferencista distinguido para una charla de tu Capítulo.,operacion/capitulos
+task,t06,,Varios miembros de tu Rama no renovaron su membresía y quieres recuperarlos.,operacion/captacion
+task,t07,,"En tu perfil de IEEE apareces como Member y no como Student Member, y quieres corregirlo.",operacion/membresia
+task,t08,,"En un correo leíste ""OU Analytics"" y no sabes qué significa.",conoce-ieee/glosario
+task,t10,,Acabas de asumir como Vicepresidente de tu Rama y no sabes por dónde empezar.,cargos/vicepresidente
+task,t11,,Quieres postular a tu Rama a un premio.,recursos/premios
+task,t12,,Se acerca el fin de tu periodo: hay que elegir la nueva junta y entregarle el cargo.,operacion/elecciones|operacion/empalme
+task,t13,,Quieres ver qué cursos del CLE se recomiendan para el cargo de tesorero.,cargos/tesorero|recursos/capacitacion
+task,t14,,El Consejero de tu Rama no responde y no sabes a quién escribirle.,recursos/contacto

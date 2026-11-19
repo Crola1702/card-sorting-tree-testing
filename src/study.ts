@@ -13,8 +13,11 @@ export type TreeTestStudy = Common & {
   hesitationMs: number;
 };
 export type Study = CardSortStudy | TreeTestStudy;
+// One shared link that sends each participant to one of several studies at random (A/B test).
+export type SplitStudy = { id: string; kind: 'split'; variants: string[] };
 
 const DEFAULT_HESITATION_MS = 10_000;
+export const STUDY_ID = /^[A-Za-z0-9_-]{1,64}$/;
 // Must stay true to what the app stores; update it if the profile form or tables change.
 export const DEFAULT_CONSENT = [
   'Este estudio busca mejorar cómo se organiza la información para estudiantes de IEEE. Participar es voluntario.',
@@ -53,8 +56,18 @@ function unique(ids: string[], what: string) {
   }
 }
 
-export function parseStudyJson(id: string, raw: any): Study {
+export function parseStudyJson(id: string, raw: any): Study | SplitStudy {
   if (!raw || typeof raw !== 'object') fail('El archivo no contiene un objeto JSON.');
+  if (raw.kind === 'split') {
+    const variants = list(raw.variants, 'variants').map((v) => text(v, 'variants', 64));
+    if (variants.length < 2) fail('"variants" necesita al menos dos estudios.');
+    for (const v of variants) {
+      if (!STUDY_ID.test(v)) fail(`"${v}" no es un id de estudio válido.`);
+      if (v === id) fail('Un estudio "split" no puede apuntarse a sí mismo.');
+    }
+    unique(variants, 'variants');
+    return { id, kind: 'split', variants };
+  }
   const title = text(raw.title, 'title', MAX_LABEL);
   const intro = typeof raw.intro === 'string' ? raw.intro.trim() : '';
   const consent = typeof raw.consent === 'string' && raw.consent.trim() ? raw.consent.trim() : DEFAULT_CONSENT;
@@ -97,7 +110,7 @@ export function parseStudyJson(id: string, raw: any): Study {
     return { ...common, kind: 'tree_test', tree, tasks, hesitationMs };
   }
 
-  fail('"kind" debe ser "card_sort" o "tree_test".');
+  fail('"kind" debe ser "card_sort", "tree_test" o "split".');
 }
 
 // RFC 4180 parser. Accepts ";" as separator because Excel uses it in Spanish locales.
@@ -162,10 +175,10 @@ export function parseStudyCsv(id: string, input: string): Study {
 
   if (raw.cards.length && nodes.size) fail('El CSV mezcla tarjetas (card) y árbol (node). Usa un archivo por estudio.');
   raw.kind = raw.cards.length ? 'card_sort' : nodes.size ? 'tree_test' : fail('El CSV no tiene filas "card" ni "node".');
-  return parseStudyJson(id, raw);
+  return parseStudyJson(id, raw) as Study; // kind is card_sort or tree_test, set just above
 }
 
-export async function loadStudy(id: string): Promise<Study> {
+async function fetchStudy(id: string): Promise<Study | SplitStudy> {
   for (const ext of ['json', 'csv'] as const) {
     const res = await fetch(`studies/${id}.${ext}`, { cache: 'no-cache' });
     // The Vite dev server answers missing files with index.html, so check the content type too.
@@ -179,4 +192,24 @@ export async function loadStudy(id: string): Promise<Study> {
     }
   }
   fail(`No existe el estudio "${id}".`);
+}
+
+// Sticky per browser, so reloading never shows a participant the other variant.
+export function pickVariant(split: SplitStudy, random = Math.random): string {
+  const key = `variant:${split.id}`;
+  try {
+    const saved = localStorage.getItem(key);
+    if (saved && split.variants.includes(saved)) return saved;
+  } catch { /* storage blocked: fall back to a fresh draw */ }
+  const variant = split.variants[Math.min(split.variants.length - 1, Math.floor(random() * split.variants.length))];
+  try { localStorage.setItem(key, variant); } catch { /* ignore */ }
+  return variant;
+}
+
+export async function loadStudy(id: string): Promise<Study> {
+  const study = await fetchStudy(id);
+  if (study.kind !== 'split') return study;
+  const variant = await fetchStudy(pickVariant(study));
+  if (variant.kind === 'split') fail('Un estudio "split" no puede apuntar a otro "split".');
+  return variant;
 }

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_CONSENT, parseCsv, parseStudyCsv, parseStudyJson } from './study.ts';
+import { DEFAULT_CONSENT, parseCsv, parseStudyCsv, parseStudyJson, pickVariant, type Study } from './study.ts';
 
 test('parseCsv handles quotes, escaped quotes, CRLF, BOM and blank lines', () => {
   const rows = parseCsv('﻿a,b\r\n"x, y","say ""hi"""\r\n\r\n"multi\nline",z');
@@ -37,8 +37,8 @@ test('parseStudyCsv builds a card sort', () => {
 
 test('consent text defaults when missing and can be overridden in JSON and CSV', () => {
   const json = { kind: 'card_sort', title: 'T', cards: [{ id: 'c', label: 'x' }] };
-  assert.equal(parseStudyJson('x', json).consent, DEFAULT_CONSENT);
-  assert.equal(parseStudyJson('x', { ...json, consent: ' Propio ' }).consent, 'Propio');
+  assert.equal((parseStudyJson('x', json) as Study).consent, DEFAULT_CONSENT);
+  assert.equal((parseStudyJson('x', { ...json, consent: ' Propio ' }) as Study).consent, 'Propio');
   assert.equal(parseStudyCsv('x', 'type,id,text\ntitle,,T\nconsent,,Texto CSV\ncard,c,x').consent, 'Texto CSV');
 });
 
@@ -54,4 +54,17 @@ test('parseStudyJson rejects tasks pointing to missing nodes, duplicate ids and 
   assert.throws(() => parseStudyJson('x', { ...base, tree: [{ id: 'n1', label: 'A' }, { id: 'n1', label: 'B' }] }), /repetido/);
   assert.throws(() => parseStudyJson('x', { kind: 'card_sort', title: 'T', cards: [{ id: 'c', label: 'x'.repeat(301) }] }), /supera/);
   assert.throws(() => parseStudyJson('x', { kind: 'otro', title: 'T' }), /kind/);
+});
+
+test('split studies validate their variants and pick one at random', () => {
+  const split = parseStudyJson('arbol-wiki', { kind: 'split', variants: ['arbol-a', 'arbol-b'] });
+  assert.deepEqual(split, { id: 'arbol-wiki', kind: 'split', variants: ['arbol-a', 'arbol-b'] });
+  if (split.kind !== 'split') return;
+  assert.equal(pickVariant(split, () => 0), 'arbol-a');
+  assert.equal(pickVariant(split, () => 0.999), 'arbol-b');
+  assert.equal(pickVariant(split, () => 1), 'arbol-b'); // never out of range
+  assert.throws(() => parseStudyJson('s', { kind: 'split', variants: ['solo'] }), /al menos dos/);
+  assert.throws(() => parseStudyJson('s', { kind: 'split', variants: ['a', 'a'] }), /repetido/);
+  assert.throws(() => parseStudyJson('s', { kind: 'split', variants: ['s', 'b'] }), /sí mismo/);
+  assert.throws(() => parseStudyJson('s', { kind: 'split', variants: ['../x', 'b'] }), /no es un id/);
 });

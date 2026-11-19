@@ -1,0 +1,61 @@
+type,id,parent,text,correct
+title,,,Encuentra información en la wiki de Ramas Estudiantiles,
+intro,,,"Te mostraremos el menú de la wiki de Ramas Estudiantiles IEEE Colombia, solo con texto, y te pediremos encontrar varias cosas.
+Navega como lo harías normalmente. Cuando creas que llegaste al lugar correcto, toca ""Aquí lo encontraría"". Puedes volver atrás cuantas veces quieras. No hay respuestas incorrectas: estamos evaluando la wiki, no a ti.",
+node,empezar,,Empezar en IEEE,
+node,empezar/ieee-colombia,empezar,IEEE en Colombia,
+node,empezar/unirse,empezar,Cómo unirse a IEEE,
+node,empezar/participar,empezar,Participar como voluntario,
+node,mi-cargo,,Mi cargo,
+node,mi-cargo/primer-mes,mi-cargo,Tu primer mes como directivo,
+node,mi-cargo/presidente-rama,mi-cargo,Presidente de Rama,
+node,mi-cargo/presidente-capitulo,mi-cargo,Presidente de Capítulo,
+node,mi-cargo/presidente-grupo-afinidad,mi-cargo,Presidente de Grupo de Afinidad,
+node,mi-cargo/vicepresidente,mi-cargo,Vicepresidente,
+node,mi-cargo/secretario,mi-cargo,Secretario,
+node,mi-cargo/tesorero,mi-cargo,Tesorero,
+node,mi-cargo/consejero,mi-cargo,Consejero de Rama,
+node,operar,,Operar la Rama,
+node,operar/requisitos,operar,Requisitos de una Rama,
+node,operar/reportes,operar,Reportes y fechas límite,
+node,operar/junta-directiva,operar,Junta directiva y funciones,
+node,operar/elecciones-y-transicion,operar,Elecciones y transición de la junta,
+node,eventos,,Eventos,
+node,eventos/organizar-evento,eventos,Organizar un evento,
+node,eventos/reportar-evento,eventos,Reportar un evento en vTools,
+node,eventos/conseguir-ponentes,eventos,Conseguir ponentes,
+node,dinero,,Dinero,
+node,dinero/rebate,dinero,Rebate: cómo se calcula y cómo cobrarlo,
+node,dinero/otras-fuentes,dinero,Otras fuentes de financiación,
+node,membresia,,Membresía y captación,
+node,membresia/anio-de-membresia,membresia,Año de membresía,
+node,membresia/que-buscan-los-estudiantes,membresia,Qué buscan los estudiantes,
+node,membresia/plan-de-captacion,membresia,Plan de captación y renovación,
+node,capitulos,,Capítulos y Grupos de Afinidad,
+node,capitulos/crear-capitulo,capitulos,Cómo crear un Capítulo,
+node,capitulos/crear-grupo-afinidad,capitulos,Cómo crear un Grupo de Afinidad,
+node,premios,,Premios y Reconocimientos,
+node,premios/premios-sac-colombia,premios,Premios del SAC Colombia,
+node,premios/premios-regionales,premios,Premios regionales e internacionales,
+node,aprender,,Aprender más,
+node,aprender/glosario,aprender,Glosario,
+node,aprender/formacion-por-cargo,aprender,Formación por cargo,
+node,aprender/catalogo-cursos-cle,aprender,Catálogo de cursos del CLE,
+node,ayuda,,Ayuda y recursos,
+node,ayuda/contacto,ayuda,¿A quién preguntar?,
+node,ayuda/faq,ayuda,Preguntas frecuentes,
+node,ayuda/herramientas-y-marca,ayuda,Herramientas y marca,
+node,ayuda/enlaces,ayuda,Enlaces oficiales,
+task,t01,,Quieres saber si tu universidad tiene una Rama Estudiantil IEEE.,empezar/unirse
+task,t02,,Eres el nuevo tesorero de tu Rama y quieres cobrar el rebate que le corresponde.,dinero/rebate
+task,t03,,Necesitas saber hasta cuándo puedes entregar el Plan Anual de tu Rama.,operar/reportes
+task,t04,,Ya hiciste un evento y debes reportar la asistencia.,eventos/reportar-evento
+task,t05,,Quieres invitar a un conferencista distinguido para una charla de tu Capítulo.,eventos/conseguir-ponentes
+task,t06,,Varios miembros de tu Rama no renovaron su membresía y quieres recuperarlos.,membresia/plan-de-captacion
+task,t07,,"En tu perfil de IEEE apareces como Member y no como Student Member, y quieres corregirlo.",membresia/anio-de-membresia
+task,t08,,"En un correo leíste ""OU Analytics"" y no sabes qué significa.",aprender/glosario
+task,t10,,Acabas de asumir como Vicepresidente de tu Rama y no sabes por dónde empezar.,mi-cargo/primer-mes|mi-cargo/vicepresidente
+task,t11,,Quieres postular a tu Rama a un premio.,premios/premios-sac-colombia
+task,t12,,Se acerca el fin de tu periodo: hay que elegir la nueva junta y entregarle el cargo.,operar/elecciones-y-transicion
+task,t13,,Quieres ver qué cursos del CLE se recomiendan para el cargo de tesorero.,mi-cargo/tesorero|aprender/formacion-por-cargo
+task,t14,,El Consejero de tu Rama no responde y no sabes a quién escribirle.,ayuda/contacto

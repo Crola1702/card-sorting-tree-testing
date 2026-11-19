@@ -1,0 +1,147 @@
+{
+  "kind": "card_sort",
+  "title": "¿Cómo organizarías la wiki de Ramas Estudiantiles?",
+  "intro": "Estas tarjetas son temas de la wiki de Ramas Estudiantiles IEEE Colombia.\nAgrúpalas como tenga sentido para ti y ponle a cada grupo el nombre que usarías para buscarlo. No hay respuestas correctas: queremos entender cómo piensas en estos temas.",
+  "cards": [
+    {
+      "id": "empezar/index",
+      "label": "¿Qué es IEEE?"
+    },
+    {
+      "id": "empezar/ieee-colombia",
+      "label": "IEEE en Colombia"
+    },
+    {
+      "id": "empezar/unirse",
+      "label": "Cómo unirse a IEEE"
+    },
+    {
+      "id": "empezar/participar",
+      "label": "Participar como voluntario"
+    },
+    {
+      "id": "mi-cargo/primer-mes",
+      "label": "Tu primer mes como directivo"
+    },
+    {
+      "id": "mi-cargo/presidente-rama",
+      "label": "Presidente de Rama"
+    },
+    {
+      "id": "mi-cargo/presidente-capitulo",
+      "label": "Presidente de Capítulo"
+    },
+    {
+      "id": "mi-cargo/presidente-grupo-afinidad",
+      "label": "Presidente de Grupo de Afinidad"
+    },
+    {
+      "id": "mi-cargo/vicepresidente",
+      "label": "Vicepresidente"
+    },
+    {
+      "id": "mi-cargo/secretario",
+      "label": "Secretario"
+    },
+    {
+      "id": "mi-cargo/tesorero",
+      "label": "Tesorero"
+    },
+    {
+      "id": "mi-cargo/consejero",
+      "label": "Consejero de Rama"
+    },
+    {
+      "id": "operar/requisitos",
+      "label": "Requisitos de una Rama"
+    },
+    {
+      "id": "operar/reportes",
+      "label": "Reportes y fechas límite"
+    },
+    {
+      "id": "operar/junta-directiva",
+      "label": "Junta directiva y funciones"
+    },
+    {
+      "id": "operar/elecciones-y-transicion",
+      "label": "Elecciones y transición de la junta"
+    },
+    {
+      "id": "eventos/organizar-evento",
+      "label": "Organizar un evento"
+    },
+    {
+      "id": "eventos/reportar-evento",
+      "label": "Reportar un evento en vTools"
+    },
+    {
+      "id": "eventos/conseguir-ponentes",
+      "label": "Conseguir ponentes"
+    },
+    {
+      "id": "dinero/rebate",
+      "label": "Rebate: cómo se calcula y cómo cobrarlo"
+    },
+    {
+      "id": "dinero/otras-fuentes",
+      "label": "Otras fuentes de financiación"
+    },
+    {
+      "id": "membresia/anio-de-membresia",
+      "label": "Año de membresía"
+    },
+    {
+      "id": "membresia/que-buscan-los-estudiantes",
+      "label": "Qué buscan los estudiantes"
+    },
+    {
+      "id": "membresia/plan-de-captacion",
+      "label": "Plan de captación y renovación"
+    },
+    {
+      "id": "capitulos/crear-capitulo",
+      "label": "Cómo crear un Capítulo"
+    },
+    {
+      "id": "capitulos/crear-grupo-afinidad",
+      "label": "Cómo crear un Grupo de Afinidad"
+    },
+    {
+      "id": "premios/premios-sac-colombia",
+      "label": "Premios del SAC Colombia"
+    },
+    {
+      "id": "premios/premios-regionales",
+      "label": "Premios regionales e internacionales"
+    },
+    {
+      "id": "aprender/glosario",
+      "label": "Glosario"
+    },
+    {
+      "id": "aprender/formacion-por-cargo",
+      "label": "Formación por cargo"
+    },
+    {
+      "id": "aprender/catalogo-cursos-cle",
+      "label": "Catálogo de cursos del CLE"
+    },
+    {
+      "id": "ayuda/contacto",
+      "label": "¿A quién preguntar?"
+    },
+    {
+      "id": "ayuda/faq",
+      "label": "Preguntas frecuentes"
+    },
+    {
+      "id": "ayuda/herramientas-y-marca",
+      "label": "Herramientas y marca"
+    },
+    {
+      "id": "ayuda/enlaces",
+      "label": "Enlaces oficiales"
+    }
+  ]
+}
