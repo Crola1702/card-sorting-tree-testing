@@ -22,7 +22,7 @@ const call = (body: unknown) =>
 
 async function newParticipant(withResults: boolean) {
   const id = crypto.randomUUID();
-  const p = await db.from('participants').insert({ id, study_id: 'badge-test', role: 'Sin cargo', years_in_ieee: 1, member_grade: 'Student Member', officer_experience: false, wiki_use: 'Nunca' });
+  const p = await db.from('participants').insert({ id, study_id: 'badge-test', role: 'Ninguno', years_in_ieee: 1, member_grade: 'Student Member', officer_experience: false, wiki_use: 'Nunca' });
   assert.equal(p.error, null);
   if (withResults) {
     const r = await db.from('card_sort_placements').insert({ participant_id: id, study_id: 'badge-test', group_name: 'G', card_id: 'c1', card_label: 'C' });

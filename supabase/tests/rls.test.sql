@@ -5,7 +5,7 @@ set local role anon;
 
 select lives_ok(
   $$insert into public.participants (id, study_id, role, years_in_ieee, member_grade, officer_experience, wiki_use)
-    values ('00000000-0000-0000-0000-000000000001', 'demo', 'Tesorero de Rama', 2, 'Student Member', true, 'Nunca')$$,
+    values ('00000000-0000-0000-0000-000000000001', 'demo', 'Directivo de Rama (presidente, vicepresidente, secretario o tesorero)', 2, 'Student Member', true, 'Nunca')$$,
   'anon can insert a participant');
 
 select lives_ok(
@@ -29,7 +29,7 @@ select throws_ok($$update public.participants set years_in_ieee = 9$$, '42501', 
 select throws_ok($$delete from public.participants$$, '42501', null, 'anon cannot delete');
 select throws_ok(
   $$insert into public.participants (id, study_id, role, years_in_ieee, member_grade, officer_experience, wiki_use)
-    values (gen_random_uuid(), 'demo', 'Sin cargo', 200, 'Member', false, 'Nunca')$$,
+    values (gen_random_uuid(), 'demo', 'Ninguno', 200, 'Member', false, 'Nunca')$$,
   '23514', null, 'check constraints reject invalid data');
 select throws_ok(
   $$insert into public.participants (id, study_id, role, years_in_ieee, member_grade, officer_experience, wiki_use)
@@ -43,7 +43,7 @@ set local role authenticated;
 select throws_ok($$select * from public.participants$$, '42501', null, 'authenticated cannot read');
 select throws_ok(
   $$insert into public.participants (id, study_id, role, years_in_ieee, member_grade, officer_experience, wiki_use)
-    values (gen_random_uuid(), 'demo', 'Sin cargo', 1, 'Member', false, 'Nunca')$$,
+    values (gen_random_uuid(), 'demo', 'Ninguno', 1, 'Member', false, 'Nunca')$$,
   '42501', null, 'authenticated cannot insert');
 
 reset role;

@@ -16,14 +16,13 @@ const db = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_
 
 type Profile = { role: string; years_in_ieee: number; member_grade: string; officer_experience: boolean; wiki_use: string };
 
-// Must match the CHECK constraints in supabase/migrations/20261119030000_profile_v2.sql.
+// Must match the CHECK constraints in supabase/migrations/20261119030000_profile_v2.sql (roles: 20261119040000_roles_v2.sql).
 const ROLES = [
-  'Sin cargo',
-  'Directivo de Rama (presidente, vicepresidente o secretario)',
-  'Tesorero de Rama',
+  'Directivo de Rama (presidente, vicepresidente, secretario o tesorero)',
   'Directivo de Capítulo o Grupo de Afinidad',
   'Consejero de Rama',
-  'Otro',
+  'Voluntario',
+  'Ninguno',
 ];
 const GRADES = ['Student Member', 'Graduate Student Member', 'Member', 'Otro grado', 'No soy miembro', 'No lo sé'];
 const WIKI_USE = ['Nunca', 'Una o dos veces', 'Varias veces'];
