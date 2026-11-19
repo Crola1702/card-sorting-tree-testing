@@ -1,3 +1,7 @@
+// Self-hosted font (same as the wiki) so participants' browsers never contact Google Fonts.
+import '@fontsource/ibm-plex-sans/300.css';
+import '@fontsource/ibm-plex-sans/400.css';
+import '@fontsource/ibm-plex-sans/700.css';
 import './style.css';
 import { createClient } from '@supabase/supabase-js';
 import { h, show } from './dom.ts';
@@ -10,7 +14,16 @@ const db = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_
   auth: { persistSession: false },
 });
 
-type Profile = { country_or_section: string; years_in_ieee: number; was_branch_officer: boolean };
+type Profile = { department: string; years_in_ieee: number; was_branch_officer: boolean };
+
+// Must match participants_department_check in supabase/migrations/20261119020000_department.sql.
+export const DEPARTMENTS = [
+  'Amazonas', 'Antioquia', 'Arauca', 'Atlántico', 'Bogotá D.C.', 'Bolívar', 'Boyacá', 'Caldas', 'Caquetá',
+  'Casanare', 'Cauca', 'Cesar', 'Chocó', 'Córdoba', 'Cundinamarca', 'Guainía', 'Guaviare', 'Huila',
+  'La Guajira', 'Magdalena', 'Meta', 'Nariño', 'Norte de Santander', 'Putumayo', 'Quindío', 'Risaralda',
+  'San Andrés y Providencia', 'Santander', 'Sucre', 'Tolima', 'Valle del Cauca', 'Vaupés', 'Vichada',
+  'Prefiero no decirlo',
+];
 
 function message(title: string, body: string) {
   show(h('h1', { textContent: title }), h('p', { textContent: body }));
@@ -39,8 +52,10 @@ function intro(study: Study): Promise<void> {
 
 function profileForm(): Promise<Profile> {
   return new Promise((resolve) => {
-    const country = h('input', { id: 'country', required: true, maxLength: 100, pattern: '.*\\S.*', autocomplete: 'off' });
-    country.setAttribute('aria-describedby', 'country-hint');
+    const department = h('select', { id: 'department', required: true },
+      h('option', { value: '', textContent: 'Elige tu departamento' }),
+      ...DEPARTMENTS.map((d) => h('option', { value: d, textContent: d })),
+    );
     const years = h('input', { id: 'years', type: 'number', inputMode: 'numeric', min: '0', max: '70', step: '1', required: true });
     const yes = h('input', { type: 'radio', name: 'officer', value: 'yes', id: 'officer-yes', required: true });
     const no = h('input', { type: 'radio', name: 'officer', value: 'no', id: 'officer-no' });
@@ -49,11 +64,10 @@ function profileForm(): Promise<Profile> {
       h('form', {
         onsubmit: (e: SubmitEvent) => {
           e.preventDefault();
-          resolve({ country_or_section: country.value.trim(), years_in_ieee: Number(years.value), was_branch_officer: yes.checked });
+          resolve({ department: department.value, years_in_ieee: Number(years.value), was_branch_officer: yes.checked });
         },
       },
-        h('label', { htmlFor: 'country', textContent: 'País o sección IEEE' }), country,
-        h('p', { id: 'country-hint', className: 'muted hint', textContent: 'Por ejemplo "Colombia" o "Sección Perú". No escribas tu nombre ni el de tu universidad.' }),
+        h('label', { htmlFor: 'department', textContent: 'Departamento donde estudias o trabajas' }), department,
         h('label', { htmlFor: 'years', textContent: 'Años en IEEE' }), years,
         h('fieldset', {},
           h('legend', { textContent: '¿Has sido directivo de una rama estudiantil?' }),

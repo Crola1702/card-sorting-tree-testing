@@ -13,7 +13,7 @@ const RELATIONS = ['participants', 'card_sort_placements', 'tree_test_results', 
 for (const [name, key] of keys) {
   const db = createClient(url, key!, { auth: { persistSession: false } });
   const id = crypto.randomUUID();
-  const participant = { id, study_id: 'rls-test', country_or_section: 'Test', years_in_ieee: 1, was_branch_officer: false };
+  const participant = { id, study_id: 'rls-test', department: 'Antioquia', years_in_ieee: 1, was_branch_officer: false };
 
   test(`${name} key: can insert a full submission`, async () => {
     assert.equal((await db.from('participants').insert(participant)).error, null);

@@ -4,7 +4,7 @@ Static web app (GitHub Pages) that collects open card sorting and tree testing d
 The participant UI is in Spanish and mobile-first. Participants can only **insert** data; nobody can read it
 without the service role key.
 
-Participant flow: intro + consent → profile (country/section, years in IEEE, branch officer) → activity → submit (with retry).
+Participant flow: intro + consent → profile (Colombian department, years in IEEE, branch officer) → activity → submit (with retry).
 
 - To publish a new study, see [docs/new-study.md](docs/new-study.md).
 - Study file reference (all fields): [Study files](#study-files).
@@ -27,7 +27,7 @@ Participant flow: intro + consent → profile (country/section, years in IEEE, b
 
 | Data | Why |
 |---|---|
-| Country or IEEE section (free text, max 100 chars) | Requested profile segment |
+| Colombian department (fixed list, or "Prefiero no decirlo") | Requested profile segment |
 | Years in IEEE, whether they were a branch officer | Requested profile segment |
 | Card groups / tree navigation, timings | The study itself |
 | Random participant UUID, timestamps | Link a participant's rows; no relation to their identity |

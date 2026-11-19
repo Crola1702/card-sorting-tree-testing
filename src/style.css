@@ -1,25 +1,20 @@
+/* Mirrors the wiki "Wiki Ramas Estudiantiles IEEE Colombia" (MkDocs Material, light only, IEEE blue, IBM Plex Sans).
+   Values come from its extra.css and Material defaults; keep them in sync if the wiki theme changes. */
 :root {
+  --primary: #00629B;
+  --primary-light: #3385B5;
+  --primary-dark: #004B77;
+  --on-primary: #ffffff;
+  --fg: #000000de;
+  --muted: #0000008a;
+  --line: #00000012; /* hairlines only; controls use --control-line for 3:1 contrast */
+  --control-line: #0000008a;
+  --surface: #f5f5f5;
   --bg: #ffffff;
-  --fg: #1a1a1a;
-  --muted: #5c5c5c;
-  --line: #d0d0d0;
-  --surface: #f4f6f8;
-  --accent: #00629b; /* IEEE blue */
-  --accent-fg: #ffffff;
+  --note: #448aff; /* Material "note" admonition */
   --error: #b00020;
-  color-scheme: light dark;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #121417;
-    --fg: #ececec;
-    --muted: #a5a5a5;
-    --line: #3a3f45;
-    --surface: #1d2126;
-    --accent: #4fb3e8;
-    --accent-fg: #0b1a24;
-    --error: #ff6b81;
-  }
+  --shadow: 0 .2rem .5rem #0000000d, 0 0 .05rem #0000001a;
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }
@@ -27,57 +22,80 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--fg);
-  font: 1rem/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font: 1rem/1.6 "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+
+.site-header {
+  background: var(--primary);
+  color: var(--on-primary);
+  box-shadow: 0 0 .2rem #0000001a, 0 .2rem .4rem #0003;
+}
+.site-header div { max-width: 42rem; margin: 0 auto; padding: .75rem 1rem; }
+.site-name { display: block; font-weight: 700; line-height: 1.3; }
+.site-sub { display: block; font-size: .875rem; opacity: .85; }
+
 main { max-width: 42rem; margin: 0 auto; padding: 1rem 1rem 4rem; }
-h1 { font-size: 1.4rem; line-height: 1.3; }
+/* Material headings: light weight, muted color. */
+h1 { font-size: 1.75rem; font-weight: 300; line-height: 1.3; color: var(--muted); margin: 1rem 0 1rem; }
 h1:focus { outline: none; }
-h2 { font-size: 1rem; margin: 0 0 .5rem; }
+h2 { font-size: 1rem; font-weight: 700; margin: 0 0 .5rem; }
+a { color: var(--primary); }
 .muted { color: var(--muted); }
-.error { color: var(--error); min-height: 1.5em; }
+.error { color: var(--error); min-height: 1.6em; }
 
 button, input, select { font: inherit; color: inherit; }
-button {
+/* Material .md-button: outlined in the primary color, 2px radius, bold. */
+button, a.button {
   min-height: 44px;
-  padding: .5rem 1rem;
-  border: 1px solid var(--line);
-  border-radius: .5rem;
-  background: var(--surface);
+  padding: .5rem 1.25rem;
+  border: .1rem solid var(--primary);
+  border-radius: .125rem;
+  background: var(--bg);
+  color: var(--primary);
+  font-weight: 700;
   cursor: pointer;
+  transition: background-color .125s, color .125s, border-color .125s;
 }
-a.button {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: .5rem 1rem;
-  border-radius: .5rem;
-  text-decoration: none;
-  margin: .25rem 0 .5rem;
-}
-button.primary, a.button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
-button.link { border: 0; background: none; color: var(--accent); min-height: 0; padding: .25rem; }
-:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+button:hover, a.button:hover { background: var(--primary); color: var(--on-primary); }
+button.primary, a.button.primary { background: var(--primary); color: var(--on-primary); }
+button.primary:hover, a.button.primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+button.link { border: 0; background: none; color: var(--primary); min-height: 0; padding: .25rem; font-weight: 400; }
+button.link:hover { background: none; color: var(--primary-dark); text-decoration: underline; }
+a.button { display: inline-flex; align-items: center; text-decoration: none; margin: .25rem 0 .5rem; }
+:focus-visible { outline: 3px solid var(--primary-light); outline-offset: 2px; }
 
 form { display: grid; gap: .5rem; }
 input:not([type=radio], [type=checkbox]), select {
   width: 100%;
   min-height: 44px;
   padding: .5rem;
-  border: 1px solid var(--line);
-  border-radius: .5rem;
+  border: 1px solid var(--control-line);
+  border-radius: .125rem;
   background: var(--bg);
 }
-fieldset { border: 1px solid var(--line); border-radius: .5rem; margin: .5rem 0; }
+input:not([type=radio], [type=checkbox]):focus, select:focus { border-color: var(--primary); }
+fieldset { border: 1px solid var(--line); border-radius: .2rem; margin: .5rem 0; }
 label.inline { display: inline-flex; gap: .4rem; align-items: center; margin-right: 1.5rem; min-height: 44px; }
-input[type=radio], input[type=checkbox] { width: 1.25rem; height: 1.25rem; flex: none; accent-color: var(--accent); }
+input[type=radio], input[type=checkbox] { width: 1.25rem; height: 1.25rem; flex: none; accent-color: var(--primary); }
 form .primary { margin-top: .5rem; }
 .hint { margin: -.25rem 0 .25rem; font-size: .875rem; }
-.consent { border: 1px solid var(--line); border-radius: .75rem; padding: .75rem 1rem; background: var(--surface); }
-.consent p { margin: .5rem 0; font-size: .95rem; }
+
+/* Material admonition ("note"): thin colored border, tinted title, light shadow. */
+.consent {
+  border: .075rem solid var(--note);
+  border-radius: .2rem;
+  box-shadow: var(--shadow);
+  padding: 0 .75rem .25rem;
+  overflow: hidden;
+  font-size: .95rem;
+}
+.consent h2 { margin: 0 -.75rem .5rem; padding: .5rem .75rem; background: #448aff1a; }
+.consent p { margin: .5rem 0; }
 
 /* Card sort */
 .board { display: grid; gap: 1rem; margin: 1rem 0; }
-.group { border: 1px solid var(--line); border-radius: .75rem; padding: .75rem; background: var(--surface); }
+.group { border: 1px solid var(--line); border-radius: .2rem; padding: .75rem; background: var(--surface); box-shadow: var(--shadow); }
 .group-head { display: flex; gap: .5rem; align-items: center; margin-bottom: .5rem; }
 .cards { list-style: none; margin: 0; padding: 0; min-height: 3.5rem; display: grid; gap: .5rem; }
 .card {
@@ -86,8 +104,9 @@ form .primary { margin-top: .5rem; }
   gap: .5rem;
   align-items: center;
   padding: .5rem .75rem;
-  border: 1px solid var(--line);
-  border-radius: .5rem;
+  border: 1px solid #00000024;
+  border-left: .2rem solid var(--primary);
+  border-radius: .125rem;
   background: var(--bg);
   cursor: grab;
   touch-action: manipulation;
@@ -95,9 +114,30 @@ form .primary { margin-top: .5rem; }
 .card select { width: auto; max-width: 9rem; min-height: 36px; font-size: .875rem; }
 .sortable-ghost { opacity: .4; }
 
-/* Tree test */
-.task { background: var(--surface); border-left: 4px solid var(--accent); padding: .75rem; border-radius: .25rem; }
-.crumbs { color: var(--muted); font-size: .9rem; margin-bottom: .5rem; }
-.tree { list-style: none; padding: 0; display: grid; gap: .5rem; }
-.tree button { width: 100%; text-align: left; }
+/* Tree test: the task reads like a Material admonition in IEEE blue, the tree like the wiki sidebar. */
+.task {
+  color: var(--fg);
+  font-size: 1.25rem;
+  font-weight: 400;
+  border: .075rem solid var(--primary);
+  border-left-width: .25rem;
+  border-radius: .2rem;
+  box-shadow: var(--shadow);
+  padding: .75rem 1rem;
+}
+.crumbs { color: var(--muted); font-size: .875rem; margin-bottom: .5rem; }
+.tree { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--line); }
+.tree li { border-bottom: 1px solid var(--line); }
+.tree button {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--fg);
+  font-weight: 400;
+  padding: .75rem .5rem;
+}
+.tree button::after { content: "›"; float: right; color: var(--muted); }
+.tree button:hover { background: var(--surface); color: var(--primary); }
 .actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
