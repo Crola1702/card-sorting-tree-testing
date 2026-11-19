@@ -76,7 +76,7 @@ collected, update that text in the same change.**
 |---|---|---|
 | `test` | every push and PR | typecheck + unit tests |
 | `test-db` | every push and PR | starts Supabase in Docker, runs pgTAP RLS tests and API tests with the public keys |
-| `migrate` | push to `main`, after both tests pass | `supabase link` + `supabase db push` (applies only new migrations) + `supabase functions deploy completion-token` |
+| `migrate` | push to `main`, after both tests pass | `supabase link` + `supabase db push --remote` (applies only new migrations) + `supabase functions deploy completion-token` |
 | `deploy` | after `migrate` | builds with the public URL/key and publishes to GitHub Pages |
 
 A failing test blocks migrations and deployment. Re-run manually from the Actions tab (`workflow_dispatch`).
@@ -88,8 +88,8 @@ The CLI is a dev dependency, so `npx supabase` uses the pinned version.
 ```sh
 npx supabase login
 npx supabase link --project-ref <ref>
-npx supabase db push          # applies pending migrations in supabase/migrations
-npx supabase migration list   # shows which migrations are applied remotely
+npx supabase db push --remote          # applies pending migrations to the linked project
+npx supabase migration list --remote   # shows which migrations are applied remotely
 ```
 
 The frontend only deploys through the workflow (or build locally with `npm run build` and upload `dist/`).

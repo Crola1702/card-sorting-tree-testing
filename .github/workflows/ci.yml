@@ -71,7 +71,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx supabase link --project-ref "${{ vars.SUPABASE_PROJECT_REF }}"
-      - run: npx supabase db push
+      # CLI v3 targets the local stack by default; --remote means the linked project.
+      - run: npx supabase db push --remote
       # Secrets are set once by hand (README "Badge claim"); this only ships the code.
       - run: npx supabase functions deploy completion-token
 
