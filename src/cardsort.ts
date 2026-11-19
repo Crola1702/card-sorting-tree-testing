@@ -7,10 +7,12 @@ const POOL = 'pool';
 
 // Open card sort: the participant creates and names groups, then drags cards into them.
 // Every card also has a "Mover a" select, so the task works without dragging (keyboard, screen readers).
+// "No sé qué significa" aparta la tarjeta sin mostrar ninguna definición: una ayuda invalidaría la medición.
 export function runCardSort(study: CardSortStudy): Promise<Placement[]> {
   const labels = new Map(study.cards.map((c) => [c.id, c.label]));
   let pool = shuffle(study.cards.map((c) => c.id));
   let groups: Group[] = [];
+  const unknown = new Map<string, string>(); // tarjeta no entendida -> "¿Qué crees que significa?" (opcional)
   let nextKey = 1;
   let sortables: Sortable[] = [];
 
@@ -18,10 +20,18 @@ export function runCardSort(study: CardSortStudy): Promise<Placement[]> {
     const board = h('div', { className: 'board' });
     const status = h('p', { className: 'error', role: 'alert' });
 
-    const move = (cardId: string, to: string) => {
+    const detach = (cardId: string) => {
       pool = pool.filter((id) => id !== cardId);
       for (const g of groups) g.cardIds = g.cardIds.filter((id) => id !== cardId);
+    };
+    const move = (cardId: string, to: string) => {
+      detach(cardId);
       (to === POOL ? pool : groups.find((g) => g.key === to)!.cardIds).push(cardId);
+      render();
+    };
+    const markUnknown = (cardId: string) => {
+      detach(cardId);
+      unknown.set(cardId, '');
       render();
     };
 
@@ -40,8 +50,43 @@ export function runCardSort(study: CardSortStudy): Promise<Placement[]> {
         ...groups.map((g) => h('option', { value: g.key, textContent: g.name.trim() || 'Grupo sin nombre' })),
       );
       select.value = groups.find((g) => g.cardIds.includes(cardId))?.key ?? POOL;
-      return h('li', { className: 'card', dataset: { card: cardId } }, h('span', { textContent: labels.get(cardId)! }), select);
+      const dontKnow = h('button', {
+        type: 'button',
+        className: 'link',
+        textContent: 'No sé qué significa',
+        ariaLabel: `No sé qué significa "${labels.get(cardId)}"`,
+        onclick: () => markUnknown(cardId),
+      });
+      return h('li', { className: 'card', dataset: { card: cardId } },
+        h('span', { textContent: labels.get(cardId)! }),
+        h('div', { className: 'card-actions' }, dontKnow, select),
+      );
     };
+
+    // Zona aparte, fuera de los grupos y sin arrastre; la marca se puede deshacer antes de enviar.
+    const unknownBox = () => h('section', { className: 'group unknown' },
+      h('h2', { textContent: `No sé qué significan (${unknown.size})` }),
+      unknown.size
+        ? h('ul', { className: 'cards' }, ...[...unknown].map(([cardId, guess]) => {
+            const input = h('input', {
+              value: guess,
+              maxLength: 200,
+              placeholder: '¿Qué crees que significa? (opcional)',
+              ariaLabel: `¿Qué crees que significa "${labels.get(cardId)}"? (opcional)`,
+              oninput: () => { unknown.set(cardId, input.value); },
+            });
+            const undo = h('button', {
+              type: 'button',
+              className: 'link',
+              textContent: 'Deshacer',
+              ariaLabel: `Deshacer la marca de "${labels.get(cardId)}"`,
+              onclick: () => { unknown.delete(cardId); pool.push(cardId); render(); },
+            });
+            return h('li', { className: 'card unknown-card' },
+              h('span', { textContent: labels.get(cardId)! }), undo, input);
+          }))
+        : h('p', { className: 'muted', textContent: 'Si no entiendes una tarjeta, toca "No sé qué significa" y aparecerá aquí.' }),
+    );
 
     const list = (key: string, ids: string[]) => h('ul', { className: 'cards', dataset: { list: key } }, ...ids.map(cardItem));
 
@@ -69,6 +114,7 @@ export function runCardSort(study: CardSortStudy): Promise<Placement[]> {
       board.replaceChildren(
         h('section', { className: 'group pool' }, h('h2', { textContent: `Tarjetas por ordenar (${pool.length})` }), list(POOL, pool)),
         ...groups.map(groupBox),
+        unknownBox(),
       );
       status.textContent = '';
       // forceFallback: same pointer-based dragging on desktop and mobile (native HTML5 DnD fails on touch).
@@ -80,7 +126,7 @@ export function runCardSort(study: CardSortStudy): Promise<Placement[]> {
           forceFallback: true,
           delay: 200,
           delayOnTouchOnly: true,
-          filter: 'select',
+          filter: 'select, button',
           preventOnFilter: false,
           onEnd: syncFromDom,
         }),
@@ -102,7 +148,7 @@ export function runCardSort(study: CardSortStudy): Promise<Placement[]> {
       className: 'primary',
       textContent: 'Terminar',
       onclick: () => {
-        const result = buildPlacements(pool, groups, labels);
+        const result = buildPlacements(pool, groups, labels, unknown);
         if (typeof result === 'string') status.textContent = result;
         else resolve(result);
       },
@@ -111,7 +157,7 @@ export function runCardSort(study: CardSortStudy): Promise<Placement[]> {
     render();
     show(
       h('h1', { textContent: study.title }),
-      h('p', { textContent: 'Crea grupos, ponles el nombre que te parezca y arrastra cada tarjeta al grupo donde la buscarías. En el celular, mantén presionada la tarjeta para arrastrarla, o usa el menú "Mover a" de cada tarjeta. No hay respuestas correctas.' }),
+      h('p', { textContent: 'Crea grupos, ponles el nombre que te parezca y arrastra cada tarjeta al grupo donde la buscarías. En el celular, mantén presionada la tarjeta para arrastrarla, o usa el menú "Mover a" de cada tarjeta. Si no entiendes una tarjeta, toca "No sé qué significa": es una respuesta válida y útil. No hay respuestas correctas.' }),
       addGroup,
       board,
       status,

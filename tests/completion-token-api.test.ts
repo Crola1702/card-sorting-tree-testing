@@ -20,7 +20,8 @@ const call = (body: unknown) =>
     body: JSON.stringify(body),
   });
 
-async function newParticipant(withResults: boolean) {
+// withResults: guarda una respuesta; finished: además la marca de fin (lo que exige la insignia).
+async function newParticipant(withResults: boolean, finished = withResults) {
   const id = crypto.randomUUID();
   const p = await db.from('participants').insert({ id, study_id: 'badge-test', role: 'Ninguno', years_in_ieee: 1, member_grade: 'Student Member', officer_experience: false, wiki_use: 'Nunca' });
   assert.equal(p.error, null);
@@ -28,6 +29,7 @@ async function newParticipant(withResults: boolean) {
     const r = await db.from('card_sort_placements').insert({ participant_id: id, study_id: 'badge-test', group_name: 'G', card_id: 'c1', card_label: 'C' });
     assert.equal(r.error, null);
   }
+  if (finished) assert.equal((await db.from('completions').insert({ participant_id: id })).error, null);
   return id;
 }
 
@@ -37,8 +39,9 @@ test('rejects malformed participant ids', async () => {
   assert.deepEqual(await res.json(), { error: 'invalid_participant_id' });
 });
 
-test('refuses unknown participants and participants without results', async () => {
-  for (const id of [crypto.randomUUID(), await newParticipant(false)]) {
+test('refuses unknown participants, participants without results and unfinished participants', async () => {
+  // El tercero respondió algo (guardado progresivo) pero no terminó: no puede reclamar la insignia.
+  for (const id of [crypto.randomUUID(), await newParticipant(false), await newParticipant(true, false)]) {
     const res = await call({ participant_id: id });
     assert.equal(res.status, 404);
     assert.deepEqual(await res.json(), { error: 'not_completed' });

@@ -1,5 +1,5 @@
 begin;
-select plan(16);
+select plan(27);
 
 set local role anon;
 
@@ -37,6 +37,41 @@ select throws_ok(
   '23514', null, 'only listed roles are accepted');
 
 select lives_ok($$select public.ping()$$, 'anon can call the keepalive ping');
+
+-- Campos nuevos: "no sé", omitida, confianza y marca de fin (migración 20261119050000).
+select lives_ok(
+  $$insert into public.card_sort_placements (participant_id, study_id, group_name, card_id, card_label, not_understood, guess)
+    values ('00000000-0000-0000-0000-000000000001', 'demo', null, 'c2', 'Rebate', true, 'algo de dinero')$$,
+  'anon can insert a card marked as not understood, with a guess');
+select lives_ok(
+  $$insert into public.tree_test_results (participant_id, study_id, task_id, task_text, path_ids, path_labels,
+      backtrack_count, time_to_first_click_ms, hesitated, duration_ms, outcome)
+    values ('00000000-0000-0000-0000-000000000001', 'demo', 't2', 'x', '{}', '{}', 0, 900, false, 900, 'dont_know')$$,
+  'anon can insert a "no sé" task without node, path or correct flag');
+select lives_ok(
+  $$insert into public.tree_test_results (participant_id, study_id, task_id, task_text, path_ids, path_labels,
+      backtrack_count, time_to_first_click_ms, hesitated, duration_ms, outcome)
+    values ('00000000-0000-0000-0000-000000000001', 'demo', 't3', 'x', '{}', '{}', 0, 500, false, 500, 'skipped')$$,
+  'anon can insert a skipped task');
+select lives_ok($$insert into public.completions (participant_id) values ('00000000-0000-0000-0000-000000000001')$$, 'anon can insert the completion mark');
+select throws_ok(
+  $$insert into public.tree_test_results (participant_id, study_id, task_id, task_text, path_ids, path_labels,
+      correct, backtrack_count, time_to_first_click_ms, hesitated, duration_ms, outcome)
+    values ('00000000-0000-0000-0000-000000000001', 'demo', 't4', 'x', '{}', '{}', true, 0, 1, false, 1, 'dont_know')$$,
+  '23514', null, '"no sé" can never be stored as correct');
+select throws_ok(
+  $$insert into public.card_sort_placements (participant_id, study_id, group_name, card_id, card_label, not_understood)
+    values ('00000000-0000-0000-0000-000000000001', 'demo', 'G', 'c3', 'X', true)$$,
+  '23514', null, 'a not-understood card cannot also be in a group');
+select throws_ok(
+  $$insert into public.tree_test_results (participant_id, study_id, task_id, task_text, path_ids, path_labels,
+      backtrack_count, time_to_first_click_ms, hesitated, duration_ms, outcome)
+    values ('00000000-0000-0000-0000-000000000001', 'demo', 't2', 'x', '{}', '{}', 0, 1, false, 1, 'skipped')$$,
+  '23505', null, 'the same task cannot be saved twice for a participant');
+select throws_ok($$select not_understood, guess from public.card_sort_placements$$, '42501', null, 'anon cannot read the new card columns');
+select throws_ok($$select outcome, confidence from public.tree_test_results$$, '42501', null, 'anon cannot read the new task columns');
+select throws_ok($$select * from public.completions$$, '42501', null, 'anon cannot read completions');
+select throws_ok($$select * from public.export_participants$$, '42501', null, 'anon cannot read the participants export');
 
 reset role;
 set local role authenticated;

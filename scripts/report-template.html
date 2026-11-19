@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel de análisis</title>
+<style>
+  /* Mismos colores que la herramienta y la wiki (IEEE blue, modo claro). */
+  :root { --primary: #00629B; --fg: #000000de; --muted: #0000008a; --line: #0000001f; --surface: #f5f5f5; --warn: #fff4e5; --warn-line: #ff9100; }
+  * { box-sizing: border-box; }
+  body { margin: 0; color: var(--fg); background: #fff; font: 15px/1.5 "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .site-header { background: var(--primary); color: #fff; }
+  .site-header div, main { max-width: 72rem; margin: 0 auto; padding: .75rem 1rem; }
+  .site-name { display: block; font-weight: 700; }
+  .site-sub { display: block; font-size: .875rem; opacity: .85; }
+  h1, h2 { font-weight: 300; color: var(--muted); }
+  h2 { margin-top: 2.5rem; border-bottom: 1px solid var(--line); padding-bottom: .25rem; }
+  h3 { margin-top: 1.5rem; }
+  .muted { color: var(--muted); }
+  .filters { background: var(--surface); border: 1px solid var(--line); border-radius: .2rem; padding: .75rem 1rem; }
+  .filters h2 { margin: 0 0 .5rem; border: 0; font-size: 1rem; font-weight: 700; color: var(--fg); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: .5rem 1rem; }
+  label { display: grid; gap: .2rem; font-size: .875rem; }
+  select, input { font: inherit; padding: .35rem; border: 1px solid var(--muted); border-radius: .125rem; background: #fff; }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; margin: .5rem 0; font-size: .875rem; }
+  caption { text-align: left; font-weight: 700; padding: .25rem 0; }
+  th, td { border-bottom: 1px solid var(--line); padding: .3rem .5rem; text-align: left; vertical-align: top; }
+  th { background: var(--surface); }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  .warn { background: var(--warn); border-left: .25rem solid var(--warn-line); padding: .5rem .75rem; border-radius: .2rem; }
+  .note { font-size: .85rem; color: var(--muted); }
+  .matrix td { text-align: center; min-width: 2.2rem; padding: .2rem; font-size: .75rem; }
+  .matrix th { font-weight: 400; font-size: .75rem; white-space: nowrap; }
+  details { margin: .25rem 0; }
+  svg text { font: 12px "IBM Plex Sans", system-ui, sans-serif; fill: var(--fg); }
+</style>
+</head>
+<body>
+<header class="site-header"><div>
+  <span class="site-name">Panel de análisis</span>
+  <span class="site-sub">Wiki Ramas Estudiantiles IEEE Colombia · card sorting y tree testing</span>
+</div></header>
+<main>
+  <p class="muted" id="generated"></p>
+  <section class="filters" aria-labelledby="filters-title">
+    <h2 id="filters-title">Filtro por perfil (se aplica a todas las métricas)</h2>
+    <div class="grid">
+      <label>Cargo actual <select id="f-role"></select></label>
+      <label>Grado de membresía <select id="f-member_grade"></select></label>
+      <label>¿Es o ha sido directivo? <select id="f-officer_experience"></select></label>
+      <label>¿Había usado la wiki? <select id="f-wiki_use"></select></label>
+      <label>Años en IEEE desde <input id="f-min_years" type="number" min="0" inputmode="numeric"></label>
+      <label>Años en IEEE hasta <input id="f-max_years" type="number" min="0" inputmode="numeric"></label>
+    </div>
+    <p class="note" id="filter-summary"></p>
+  </section>
+  <div id="out"></div>
+  <p class="note">Cómo se calcula cada métrica: docs/metricas.md en el repositorio.</p>
+</main>
+<script type="module">
+/*__ANALYSIS__*/
+
+const DATA = /*__DATA__*/null;
+
+// ---------- utilidades de dibujo (todo el texto va por textContent, nunca como HTML) ----------
+const h = (tag, props = {}, ...children) => {
+  const el = Object.assign(document.createElement(tag), props);
+  el.append(...children.filter((c) => c !== null && c !== undefined && c !== false));
+  return el;
+};
+const svg = (tag, attrs = {}) => {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
+  return el;
+};
+const pct = (p) => (p === null ? 'n/d' : `${Math.round(p * 100)}%`);
+// Porcentaje con su base explícita, p. ej. "40% (2/5)".
+const pctCell = (p, n, base) => h('td', { className: 'num', title: `${n} de ${base}` }, p === null ? 'sin base' : `${pct(p)} (${n}/${base})`);
+const numCell = (v) => h('td', { className: 'num' }, String(v));
+const table = (caption, headers, rows) => h('div', { className: 'scroll' }, h('table', {},
+  h('caption', { textContent: caption }),
+  h('thead', {}, h('tr', {}, ...headers.map(([t, num]) => h('th', { className: num ? 'num' : '', scope: 'col', textContent: t })))),
+  h('tbody', {}, ...rows),
+));
+
+// ---------- filtro ----------
+const FILTERS = {
+  role: [...new Set(DATA.participants.map((p) => p.role))].sort(),
+  member_grade: [...new Set(DATA.participants.map((p) => p.member_grade))].sort(),
+  wiki_use: ['Nunca', 'Una o dos veces', 'Varias veces'],
+};
+for (const [field, values] of Object.entries(FILTERS)) {
+  document.getElementById(`f-${field}`).append(h('option', { value: '', textContent: 'Todos' }), ...values.map((v) => h('option', { value: v, textContent: v })));
+}
+document.getElementById('f-officer_experience').append(
+  h('option', { value: '', textContent: 'Todos' }), h('option', { value: 'true', textContent: 'Sí' }), h('option', { value: 'false', textContent: 'No' }));
+
+function currentFilter() {
+  const val = (id) => document.getElementById(`f-${id}`).value;
+  const num = (id) => (val(id) === '' ? undefined : Number(val(id)));
+  return {
+    role: val('role') || undefined,
+    member_grade: val('member_grade') || undefined,
+    officer_experience: val('officer_experience') === '' ? undefined : val('officer_experience') === 'true',
+    wiki_use: val('wiki_use') || undefined,
+    min_years: num('min_years'),
+    max_years: num('max_years'),
+  };
+}
+
+// ---------- card sorting ----------
+function dendrogram(root, labels) {
+  const row = 18, labelW = 280, treeW = 360, n = root.ids.length;
+  const el = svg('svg', { width: labelW + treeW + 20, height: n * row + 30, role: 'img', 'aria-label': 'Dendrograma de tarjetas' });
+  const maxH = root.height || 1;
+  const leafY = new Map(root.ids.map((id, i) => [id, i * row + row / 2]));
+  const line = (x1, y1, x2, y2) => el.append(svg('line', { x1, y1, x2, y2, stroke: '#00629B', 'stroke-width': 1.5 }));
+  const draw = (node) => {
+    if (!node.left) return { x: labelW, y: leafY.get(node.ids[0]) };
+    const a = draw(node.left), b = draw(node.right);
+    const x = labelW + (node.height / maxH) * treeW;
+    line(a.x, a.y, x, a.y); line(b.x, b.y, x, b.y); line(x, a.y, x, b.y);
+    return { x, y: (a.y + b.y) / 2 };
+  };
+  for (const id of root.ids) {
+    const t = svg('text', { x: labelW - 6, y: leafY.get(id) + 4, 'text-anchor': 'end' });
+    t.textContent = labels.get(id);
+    el.append(t);
+  }
+  draw(root);
+  const axis = svg('text', { x: labelW, y: n * row + 20 });
+  axis.textContent = `Distancia (1 − similitud): 0 a la izquierda, ${maxH.toFixed(2)} a la derecha`;
+  el.append(axis);
+  return h('div', { className: 'scroll' }, el);
+}
+
+function matrix(order, a) {
+  const pos = new Map(a.matrix.ids.map((id, i) => [id, i]));
+  const label = new Map(a.matrix.ids.map((id, i) => [id, a.matrix.labels[i]]));
+  return h('div', { className: 'scroll' }, h('table', { className: 'matrix' },
+    h('caption', { textContent: 'Matriz de similitud: % de participantes que pusieron ambas tarjetas en el mismo grupo, entre quienes agruparon las dos' }),
+    h('thead', {}, h('tr', {}, h('th', {}), ...order.map((_, i) => h('th', { scope: 'col', textContent: String(i + 1) })))),
+    h('tbody', {}, ...order.map((r, i) => h('tr', {},
+      h('th', { scope: 'row', textContent: `${i + 1}. ${label.get(r)}` }),
+      ...order.map((c) => {
+        const s = a.matrix.sim[pos.get(r)][pos.get(c)];
+        const light = s === null ? 100 : 100 - s * 60;
+        return h('td', { textContent: s === null ? 'n/d' : String(Math.round(s * 100)), style: `background:hsl(202 100% ${light}%);color:${light < 60 ? '#fff' : 'inherit'}` });
+      }),
+    ))),
+  ));
+}
+
+function cardSection(studyId, people) {
+  const allowed = new Set(people.filter((p) => p.study_id === studyId).map((p) => p.participant_id));
+  const a = analyzeCardSort(DATA.cards.filter((r) => r.study_id === studyId), allowed);
+  const marked = a.cards.filter((c) => c.not_understood > 0);
+  const cardRow = (c) => h('tr', {},
+    h('td', { textContent: c.card_label }),
+    pctCell(c.pct_not_understood, c.not_understood, c.sorters),
+    h('td', {}, c.guesses.length
+      ? h('details', {}, h('summary', { textContent: `${c.guesses.length} respuesta(s)` }), h('ul', {}, ...c.guesses.map((g) => h('li', { textContent: g }))))
+      : 'n/d'),
+  );
+  const root = averageLinkage(a.matrix.ids, a.matrix.sim);
+  const labels = new Map(a.matrix.ids.map((id, i) => [id, a.matrix.labels[i]]));
+  return h('section', {},
+    h('h2', { textContent: `Card sorting · ${studyId}` }),
+    h('p', { textContent: `Empezaron ${a.started}; enviaron el card sort ${a.sorters}. El % de "No sé qué significa" se calcula sobre quienes enviaron.` }),
+    marked.length
+      ? table('Tarjetas más no entendidas', [['Tarjeta'], ['No sé qué significa', true], ['¿Qué crees que significa?']], marked.map(cardRow))
+      : h('p', { className: 'muted', textContent: 'Nadie marcó "No sé qué significa" con este filtro.' }),
+    h('details', {}, h('summary', { textContent: 'Todas las tarjetas' }),
+      table('Todas las tarjetas', [['Tarjeta'], ['No sé qué significa', true], ['¿Qué crees que significa?']], a.cards.map(cardRow))),
+    a.excluded.marks
+      ? h('p', { className: 'warn', textContent:
+          `Se excluyeron de la matriz y del dendrograma ${a.excluded.marks} marca(s) de "no sé" de ${a.excluded.participants} participante(s): ` +
+          'una tarjeta no entendida no cuenta para ningún par de esa persona.' +
+          (a.excluded.cards.length ? ` Tarjetas que nadie agrupó y quedaron fuera por completo: ${a.excluded.cards.join(', ')}.` : '') })
+      : null,
+    root
+      ? h('div', {}, h('h3', { textContent: 'Dendrograma (enlace promedio)' }), dendrogram(root, labels), h('h3', { textContent: 'Matriz de similitud' }), matrix(root.ids, a))
+      : h('p', { className: 'muted', textContent: 'No hay tarjetas agrupadas para dibujar la matriz y el dendrograma.' }),
+  );
+}
+
+// ---------- tree testing ----------
+function treeSection(studyId, people) {
+  const stats = analyzeTreeTest(people.filter((p) => p.study_id === studyId), DATA.tree.filter((r) => r.study_id === studyId));
+  const rows = stats.map((t) => h('tr', {},
+    h('th', { scope: 'row', textContent: `${t.task_id}. ${t.task_text}` }),
+    numCell(t.started),
+    pctCell(t.pct.skipped, t.skipped, t.started),
+    pctCell(t.pct.abandoned, t.abandoned, t.started),
+    pctCell(t.pct.dont_know, t.dont_know, t.responded),
+    pctCell(t.pct.success, t.success, t.chose),
+    pctCell(t.pct.direct, t.direct, t.chose),
+    pctCell(t.pct.failure, t.failure, t.chose),
+    h('td', { className: 'num' }, t.confidence_avg === null ? 'n/d' : `${t.confidence_avg.toFixed(1)} (n=${t.confidence_n})`),
+  ));
+  return h('section', {},
+    h('h2', { textContent: `Tree testing · ${studyId}` }),
+    rows.length
+      ? table('Resultados por tarea', [['Tarea'], ['Empezaron', true], ['Omitida', true], ['Abandono', true], ['No sé', true], ['Éxito', true], ['Éxito directo', true], ['Fallo', true], ['Confianza (1-5)', true]], rows)
+      : h('p', { className: 'muted', textContent: 'Aún no hay respuestas.' }),
+    h('p', { className: 'note', textContent:
+      'Bases: "Omitida" y "Abandono" sobre quienes empezaron el estudio. "No sé" sobre quienes respondieron la tarea ' +
+      '(no la omitieron ni abandonaron). "Éxito", "Éxito directo" y "Fallo" sobre quienes eligieron un nodo: "no sé", "omitida" ' +
+      'y "abandono" nunca cuentan como éxito ni como error. Confianza promedio sobre quienes la indicaron (solo se pregunta tras elegir un nodo).' }),
+  );
+}
+
+// ---------- render ----------
+const cardStudies = [...new Set(DATA.cards.map((r) => r.study_id))].sort();
+const treeStudies = [...new Set(DATA.tree.map((r) => r.study_id))].sort();
+document.getElementById('generated').textContent = `Datos generados el ${new Date(DATA.generated_at).toLocaleString('es-CO')}.`;
+
+function render() {
+  const people = filterParticipants(DATA.participants, currentFilter());
+  document.getElementById('filter-summary').textContent = `${people.length} de ${DATA.participants.length} participantes cumplen el filtro.`;
+  const sections = [...cardStudies.map((s) => cardSection(s, people)), ...treeStudies.map((s) => treeSection(s, people))];
+  document.getElementById('out').replaceChildren(...(sections.length ? sections : [h('p', { className: 'muted', textContent: 'Aún no hay respuestas.' })]));
+}
+document.querySelector('.filters').addEventListener('input', render);
+render();
+</script>
+</body>
+</html>

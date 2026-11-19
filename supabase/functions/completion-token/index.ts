@@ -1,4 +1,4 @@
-// POST {"participant_id": "<uuid>"} -> {"claim_url": "..."} once that participant's submission is in the DB.
+// POST {"participant_id": "<uuid>"} -> {"claim_url": "..."} once that participant finished the study.
 // Deployed with verify_jwt = false: the participant id (random, known only to the browser that created it,
 // never readable with the public key) is the bearer secret.
 import { createClient } from 'npm:@supabase/supabase-js@2';
@@ -25,20 +25,20 @@ Deno.serve(async (req) => {
   if (typeof participantId !== 'string' || !UUID.test(participantId)) return json(400, { error: 'invalid_participant_id' });
 
   // Completion is checked here with the service role, never taken from the client.
-  // The app inserts the participant first and then all results in one statement, so any result row means done.
+  // Answers are saved progressively, so only the end-of-study mark in "completions" counts
+  // (the migration backfilled it for submissions made before progressive saving).
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
     auth: { persistSession: false },
   });
-  const [cards, tree] = await Promise.all(
-    ['card_sort_placements', 'tree_test_results'].map((table) =>
-      db.from(table).select('id', { count: 'exact', head: true }).eq('participant_id', participantId),
-    ),
-  );
-  if (cards.error || tree.error) {
-    console.error(cards.error ?? tree.error);
+  const { count, error } = await db
+    .from('completions')
+    .select('participant_id', { count: 'exact', head: true })
+    .eq('participant_id', participantId);
+  if (error) {
+    console.error(error);
     return json(500, { error: 'internal_error' });
   }
-  if (!cards.count && !tree.count) return json(404, { error: 'not_completed' });
+  if (!count) return json(404, { error: 'not_completed' });
 
   return json(200, { claim_url: await createClaimUrl(cfg, participantId) });
 });

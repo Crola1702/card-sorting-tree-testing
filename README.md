@@ -1,138 +1,158 @@
-# Card sorting & tree testing (IEEE)
+# Card sorting y tree testing (IEEE)
 
-Static web app (GitHub Pages) that collects open card sorting and tree testing data into Supabase (free plan).
-The participant UI is in Spanish and mobile-first. Participants can only **insert** data; nobody can read it
-without the service role key.
+Aplicación web estática (GitHub Pages) que recoge datos de card sorting abierto y tree testing en Supabase (plan
+gratuito). La interfaz para participantes está en español y pensada para celular. Los participantes solo pueden
+**insertar** datos; nadie puede leerlos sin la llave secreta (service role).
 
-Participant flow: intro + consent → profile (current IEEE role, years in IEEE, membership grade, officer experience, prior wiki use) → activity → submit (with retry).
+Flujo del participante: introducción + consentimiento → perfil (cargo actual en IEEE, años en IEEE, grado de
+membresía, experiencia como directivo, uso previo de la wiki) → actividad → fin (con reintento si falla la red).
+Las respuestas se guardan a medida que avanza, para poder medir el abandono.
 
-- To publish a new study, see [docs/new-study.md](docs/new-study.md).
-- Study file reference (all fields): [Study files](#study-files).
+- Para publicar un estudio nuevo: [docs/new-study.md](docs/new-study.md).
+- Cómo se calcula cada métrica del panel: [docs/metricas.md](docs/metricas.md).
+- Formato de los archivos de estudio: [Archivos de estudio](#archivos-de-estudio).
 
-## Contents
+## Contenido
 
-- [Privacy and consent](#privacy-and-consent)
-- [Deploy](#deploy)
-- [Modify the app](#modify-the-app)
-- [Tests](#tests)
-- [Operations: keepalive and pausing](#operations-keepalive-and-pausing)
-- [Badge claim (open-badges-ieee)](#badge-claim-open-badges-ieee)
-- [Export results to CSV](#export-results-to-csv)
-- [Study files](#study-files)
-- [Recorded data](#recorded-data)
+- [Privacidad y consentimiento](#privacidad-y-consentimiento)
+- [Despliegue](#despliegue)
+- [Modificar la aplicación](#modificar-la-aplicación)
+- [Pruebas](#pruebas)
+- [Operación: keepalive y pausa](#operación-keepalive-y-pausa)
+- [Insignias (open-badges-ieee)](#insignias-open-badges-ieee)
+- [Exportar a CSV](#exportar-a-csv)
+- [Panel de análisis](#panel-de-análisis)
+- [Archivos de estudio](#archivos-de-estudio)
+- [Estudios actuales](#estudios-actuales)
+- [Datos registrados](#datos-registrados)
 
-## Privacy and consent
+## Privacidad y consentimiento
 
-**Stored** (only after the participant accepts the consent notice and finishes the activity):
+**Se guarda** (después de aceptar el consentimiento, a medida que el participante avanza):
 
-| Data | Why |
+| Dato | Para qué |
 |---|---|
-| Current IEEE role, membership grade (fixed lists) | Segment results by audience (VALIDACION.md groups) |
-| Years in IEEE, whether they are or were an IEEE officer | Experience level |
-| Whether they used the wiki before (never / once or twice / several times) | Familiarity with the old structure skews the A/B tree test |
-| Card groups / tree navigation, timings | The study itself |
-| Random participant UUID, timestamps | Link a participant's rows; no relation to their identity |
+| Cargo actual en IEEE, grado de membresía (listas fijas) | Separar resultados por público (grupos de VALIDACION.md) |
+| Años en IEEE, si es o ha sido directivo | Nivel de experiencia |
+| Si había usado la wiki (nunca / una o dos veces / varias veces) | La familiaridad con la estructura anterior sesga el A/B del árbol |
+| Grupos de tarjetas, tarjetas no entendidas y su suposición opcional; navegación del árbol, tiempos, "no sé", tareas omitidas y confianza | El estudio en sí |
+| UUID aleatorio del participante, fechas, marca de fin | Unir las filas de un participante y medir abandono; sin relación con su identidad |
 
-**Not stored**: name, email, IP address, user agent, location, cookies or browser storage
-(`persistSession: false`, no analytics, no third-party scripts).
+**No se guarda**: nombre, correo, dirección IP, navegador, ubicación, cookies ni almacenamiento del navegador para
+datos del estudio (`persistSession: false`, sin analítica, sin scripts de terceros). La única excepción es
+`localStorage` para recordar qué variante de un enlace A/B le tocó a ese navegador.
 
-Things outside the app's control, worth stating to an ethics reviewer:
+Fuera del control de la aplicación, conviene declararlo ante un comité de ética:
 
-- Supabase and GitHub Pages keep their own request logs (including IP addresses) for a limited time.
-- Badge claims (optional, see [Badge claim](#badge-claim-open-badges-ieee)): the issuer receives a pseudonymous
-  `sub` and then asks the person for name and email on its own page. This project stores nothing new. Whoever
-  holds both `BADGE_SUB_HMAC_KEY` and the issuer's database can link a name to a participant's answers, so keep
-  that key in Supabase secrets only and never export it next to issuer data.
-- Profile fields are quasi-identifiers: in a small section, "section + years + officer" can point to one person.
-  Report results in aggregate and do not publish per-participant rows.
+- Supabase y GitHub Pages guardan sus propios registros de peticiones (con IP) por un tiempo limitado.
+- Insignias (opcional, ver [Insignias](#insignias-open-badges-ieee)): el emisor recibe un `sub` seudónimo y luego
+  pide nombre y correo en su propia página. Este proyecto no guarda nada nuevo. Quien tenga a la vez
+  `BADGE_SUB_HMAC_KEY` y la base de datos del emisor puede unir un nombre con las respuestas de un participante:
+  guarda esa llave solo en los secretos de Supabase y nunca la exportes junto con datos del emisor.
+- Los campos del perfil son cuasi identificadores: informa resultados agregados y no publiques filas por participante.
 
-The consent notice is shown before anything else and must be accepted with a checkbox. The default text is
-`DEFAULT_CONSENT` in `src/study.ts`; each study can override it with a `consent` field. **If you change what is
-collected, update that text in the same change.**
+El consentimiento se muestra antes que todo y se acepta con una casilla. El texto por defecto es `DEFAULT_CONSENT`
+en `src/study.ts`; cada estudio puede reemplazarlo con un campo `consent`. **Si cambias lo que se recoge o cuándo
+se guarda, actualiza ese texto en el mismo cambio.**
 
-## Deploy
+## Despliegue
 
-### One-time setup
+### Configuración inicial (una vez)
 
-1. **Supabase**: create a project on the free plan. Note the *project ref* (in the URL), the *database password*
-   and, under Project Settings → API keys, the *anon/publishable* key and the *service role/secret* key.
-2. **Supabase access token**: create one at <https://supabase.com/dashboard/account/tokens>.
-3. **GitHub repo → Settings → Pages**: Source = **GitHub Actions**.
-4. **GitHub repo → Settings → Secrets and variables → Actions**:
+1. **Supabase**: crea un proyecto en el plan gratuito. Anota el *project ref* (está en la URL), la *contraseña de
+   la base de datos* y, en Project Settings → API keys, la llave *anon/publishable* y la *service role/secret*.
+2. **Token de acceso de Supabase**: créalo en <https://supabase.com/dashboard/account/tokens>.
+3. **Repositorio en GitHub → Settings → Pages**: Source = **GitHub Actions**.
+4. **Repositorio en GitHub → Settings → Secrets and variables → Actions**:
 
-   | Kind | Name | Value |
+   | Tipo | Nombre | Valor |
    |---|---|---|
-   | Secret | `SUPABASE_ACCESS_TOKEN` | token from step 2 |
-   | Secret | `SUPABASE_DB_PASSWORD` | database password |
+   | Secret | `SUPABASE_ACCESS_TOKEN` | token del paso 2 |
+   | Secret | `SUPABASE_DB_PASSWORD` | contraseña de la base de datos |
    | Variable | `SUPABASE_PROJECT_REF` | project ref |
    | Variable | `SUPABASE_URL` | `https://<ref>.supabase.co` |
-   | Variable | `SUPABASE_ANON_KEY` | anon or publishable key (public by design) |
+   | Variable | `SUPABASE_ANON_KEY` | llave anon o publishable (pública por diseño) |
 
-   The service role / secret key is **never** stored in GitHub; it is only used locally to export.
+   La llave secreta (service role) **nunca** se guarda en GitHub; solo se usa en tu computador para exportar y
+   generar el panel.
 
-5. Push to `main`.
+5. Haz push a `main`.
 
-### What the workflow does (`.github/workflows/ci.yml`)
+### Qué hace el workflow (`.github/workflows/ci.yml`)
 
-| Job | When | What |
+| Job | Cuándo | Qué hace |
 |---|---|---|
-| `test` | every push and PR | typecheck + unit tests |
-| `test-db` | every push and PR | starts Supabase in Docker, runs pgTAP RLS tests and API tests with the public keys |
-| `migrate` | push to `main`, after both tests pass | `supabase link` + `supabase db push --remote` (applies only new migrations) + `supabase functions deploy completion-token` |
-| `deploy` | after `migrate` | builds with the public URL/key and publishes to GitHub Pages |
+| `test` | cada push y PR | verificación de tipos + pruebas unitarias |
+| `test-db` | cada push y PR | levanta Supabase en Docker, corre las pruebas pgTAP de RLS y las pruebas de API con las llaves públicas |
+| `migrate` | push a `main`, si pasan las pruebas | `supabase link` + `supabase db push --remote --yes` (aplica solo migraciones nuevas) + `supabase functions deploy completion-token --yes` |
+| `deploy` | después de `migrate` | construye con la URL y la llave públicas y publica en GitHub Pages |
 
-A failing test blocks migrations and deployment. Re-run manually from the Actions tab (`workflow_dispatch`).
+Si una prueba falla, no se migra ni se despliega. Se puede volver a correr a mano desde la pestaña Actions.
 
-### Manual deploy with the Supabase CLI
+### Aplicar una migración a mano con la CLI de Supabase
 
-The CLI is a dev dependency, so `npx supabase` uses the pinned version.
+La CLI es una dependencia de desarrollo, así que `npx supabase` usa la versión fijada. Con la CLI v3, `--remote`
+apunta al proyecto enlazado (sin él, apunta a la base local) y `--yes` confirma cambios en el proyecto alojado.
 
 ```sh
 npx supabase login
 npx supabase link --project-ref <ref>
-npx supabase db push --remote          # applies pending migrations to the linked project
-npx supabase migration list --remote   # shows which migrations are applied remotely
+npx supabase migration list --remote          # qué migraciones están aplicadas
+npx supabase db push --remote --dry-run       # qué se aplicaría, sin cambiar nada
+npx supabase db push --remote                 # aplica las migraciones pendientes
+npx supabase functions deploy completion-token
 ```
 
-The frontend only deploys through the workflow (or build locally with `npm run build` and upload `dist/`).
+Lo normal es no hacerlo a mano: al hacer push a `main`, el workflow aplica las migraciones pendientes, despliega
+la función y publica el sitio, en ese orden.
 
-## Modify the app
+### Esta versión: "no sé", omitidas y guardado progresivo
 
-| To change… | Edit | Then |
+La migración `20261119050000_dont_know_and_progress.sql` es compatible hacia atrás: solo agrega columnas (con valor
+por defecto o nulas), relaja restricciones y crea la tabla `completions`, con la que marca como terminados a
+quienes ya tenían resultados. Las respuestas guardadas antes se leen como "sin marca de no sé" y su resultado se
+deriva de `correct`. El orden del workflow (migración antes que el sitio) evita que el sitio nuevo escriba
+columnas que aún no existen.
+
+## Modificar la aplicación
+
+| Para cambiar… | Edita | Luego |
 |---|---|---|
-| UI texts (Spanish) | `src/main.ts`, `src/cardsort.ts`, `src/treetest.ts` | `npm run dev` and check on a phone-sized window |
-| Default consent text | `DEFAULT_CONSENT` in `src/study.ts` | keep it true to what is stored |
-| How answers are scored (correct, hesitation, backtracks) | `src/metrics.ts` | update `src/metrics.test.ts` |
-| Study file format | `src/study.ts` | update `src/study.test.ts`, this README and `docs/new-study.md` |
-| Database schema | new migration (below) | update `supabase/tests/rls.test.sql`, `tests/rls-api.test.ts`, the export views |
-| Profile fields | migration + `profileForm` in `src/main.ts` + `DEFAULT_CONSENT` | ask whether the field is really needed |
-| Styles | `src/style.css` (colors are variables in `:root`, with a dark mode block) | |
+| Textos de la interfaz | `src/main.ts`, `src/cardsort.ts`, `src/treetest.ts` | `npm run dev` y revisa en una ventana del tamaño de un celular |
+| Texto de consentimiento por defecto | `DEFAULT_CONSENT` en `src/study.ts` | que siga diciendo la verdad sobre lo que se guarda |
+| Cómo se califica cada respuesta | `src/metrics.ts` | actualiza `src/metrics.test.ts` |
+| Métricas del panel | `src/analysis.ts` y `scripts/report-template.html` | actualiza `src/analysis.test.ts` y `docs/metricas.md` |
+| Formato de los archivos de estudio | `src/study.ts` | actualiza `src/study.test.ts`, este README y `docs/new-study.md` |
+| Esquema de la base de datos | migración nueva (abajo) | actualiza `supabase/tests/rls.test.sql`, `tests/rls-api.test.ts` y las vistas de exportación |
+| Campos del perfil | migración + `profileForm` en `src/main.ts` + `DEFAULT_CONSENT` | pregúntate si el campo es realmente necesario |
+| Estilos | `src/style.css` (colores como variables en `:root`, copiados de la wiki) | |
 
-### Schema changes
+### Cambios de esquema
 
-Never edit a migration that is already applied; add a new one:
+Nunca edites una migración ya aplicada; crea una nueva:
 
 ```sh
-npx supabase migration new add_something   # creates supabase/migrations/<timestamp>_add_something.sql
-npx supabase db reset                       # rebuilds the local DB from all migrations
-npm run test:db                             # pgTAP tests
+npx supabase migration new agregar_algo   # crea supabase/migrations/<fecha>_agregar_algo.sql
+npx supabase db reset                     # reconstruye la base local con todas las migraciones
+npm run test:db                           # pruebas pgTAP
 ```
 
-Every new table must: `enable row level security`, `revoke all … from anon, authenticated`, grant only what is
-needed, and get a read-denial test in both `supabase/tests/rls.test.sql` and `tests/rls-api.test.ts`.
-Merging to `main` applies it to production.
+Cada tabla nueva debe: `enable row level security`, `revoke all … from anon, authenticated`, dar solo el permiso
+necesario y tener una prueba de que no se puede leer, en `supabase/tests/rls.test.sql` y en `tests/rls-api.test.ts`.
+Para las vistas de exportación, agrega columnas nuevas **al final** (`create or replace view`), así el CSV conserva
+el orden de las existentes. Hacer merge a `main` la aplica en producción.
 
-## Tests
+## Pruebas
 
-| Command | Needs | Covers |
+| Comando | Necesita | Cubre |
 |---|---|---|
-| `npm test` | Node 24+ | study parser (JSON/CSV, validation), scoring (`metrics.ts`), CSV export escaping, badge token signing and `sub` |
-| `npm run test:db` | Docker, `npx supabase start` | RLS in SQL: anon may insert, never read/update/delete; check constraints |
-| `npm run test:api` | Docker, local stack + function server + env below | RLS through the real API with the anon and publishable keys (including GraphQL); `completion-token` end to end |
+| `npm test` | Node 24+ | archivos de estudio, calificación de respuestas (`metrics.ts`), métricas del panel (`analysis.ts`, con casos límite), CSV, token de insignias |
+| `npm run test:db` | Docker, `npx supabase start` | RLS en SQL: anon inserta y nunca lee, actualiza ni borra (también las columnas nuevas y `completions`); restricciones |
+| `npm run test:api` | Docker, stack local + servidor de funciones + variables de abajo | RLS a través de la API real con las llaves anon y publishable (incluye GraphQL y columnas nuevas); `completion-token` de punta a punta |
 
 ```sh
 npx supabase start
-npm run badge:keygen   # only if .secrets/badge.env does not exist yet
+npm run badge:keygen   # solo si .secrets/badge.env no existe todavía
 npx supabase functions serve --env-file .secrets/badge.env &
 eval "$(npx supabase status -o env | grep -E '^(API_URL|ANON_KEY|PUBLISHABLE_KEY)=')"
 export API_URL ANON_KEY PUBLISHABLE_KEY
@@ -140,114 +160,142 @@ set -a; . .secrets/badge.env; set +a
 npm run test:api
 ```
 
-The GraphQL check is reported as *skipped* unless `pg_graphql` is enabled locally; CI enables it.
+La prueba de GraphQL aparece como *omitida* si `pg_graphql` no está activo en local; el CI lo activa.
 
-## Operations: keepalive and pausing
+## Operación: keepalive y pausa
 
-Free Supabase projects pause after low activity over a 7-day period (Supabase docs: a few daily requests avoid
-it). `.github/workflows/keepalive.yml` runs daily and calls `public.ping()`, a function that only returns the
-server time, with the public key. If the call fails, the run fails and GitHub emails the repository owner.
+Los proyectos gratuitos de Supabase se pausan tras 7 días de poca actividad (según su documentación, unas pocas
+peticiones diarias lo evitan). `.github/workflows/keepalive.yml` corre a diario y llama a `public.ping()`, una
+función que solo devuelve la hora del servidor, con la llave pública. Si falla, el workflow falla y GitHub le
+envía un correo al dueño del repositorio.
 
-Run it by hand: Actions → *Keep Supabase awake* → *Run workflow*, or `gh workflow run keepalive.yml`.
+Para correrlo a mano: Actions → *Keep Supabase awake* → *Run workflow*, o `gh workflow run keepalive.yml`.
 
-**GitHub disables scheduled workflows in a public repository after 60 days without repository activity.**
-The Actions tab then shows a banner on the workflow. Re-enable it with *Enable workflow* or
-`gh workflow enable keepalive.yml`; any push also counts as activity.
+**GitHub desactiva los workflows programados de un repositorio público tras 60 días sin actividad en el repositorio.**
+La pestaña Actions muestra un aviso en el workflow. Reactívalo con *Enable workflow* o
+`gh workflow enable keepalive.yml`; cualquier push también cuenta como actividad.
 
-### If the project was paused anyway
+### Si el proyecto se pausó de todos modos
 
-1. Supabase Dashboard → the organization → the paused project → **Resume project**, and confirm.
-   It comes back with its data and configuration. The docs give a restore window of up to one year after pausing.
-2. Check the keepalive workflow is enabled (above) and run it once by hand.
-3. Open a study link and confirm it loads; the participants' answers saved before the pause are still there.
+1. Panel de Supabase → la organización → el proyecto pausado → **Resume project**, y confirma.
+   Vuelve con sus datos y su configuración. La documentación da hasta un año para restaurarlo.
+2. Revisa que el keepalive esté activo (arriba) y córrelo una vez a mano.
+3. Abre un enlace de estudio y confirma que carga; las respuestas guardadas antes de la pausa siguen ahí.
 
-## Badge claim (open-badges-ieee)
+## Insignias (open-badges-ieee)
 
-Participants who finish a study can claim the `test-participant` Open Badge from the separate issuer project
-(`open-badges-ieee`). Integration is API only: no shared code or database.
+Quien termina un estudio puede reclamar la insignia `test-participant` del proyecto emisor, que es independiente
+(`open-badges-ieee`). La integración es solo por API: no comparten código ni base de datos.
 
-### Flow
+### Flujo
 
-1. The participant finishes; the app saves the answers (participant row, then all results).
-2. The browser calls the Edge Function `completion-token` with `{"participant_id": "<uuid>"}`.
-3. The function checks **in the database, with the service role** that this participant has result rows.
-   Unknown or incomplete participants get `404 {"error":"not_completed"}`.
-4. It returns `{"claim_url": "<BADGE_CLAIM_BASE_URL>/claim.html#token=<jws>"}`; the completion screen shows
-   "Reclamar mi insignia". The token is in the URL fragment, so it never reaches a server log.
-5. On the issuer page the person types name and email; the issuer verifies the token with our **public** key
-   and issues the badge, deduplicating by `sub` + `badge`.
+1. El participante termina; la aplicación guarda la marca de fin en `completions`.
+2. El navegador llama a la Edge Function `completion-token` con `{"participant_id": "<uuid>"}`.
+3. La función verifica **en la base de datos, con la llave secreta**, que ese participante tenga la marca de fin.
+   Si no existe o no terminó (aunque haya guardado algunas respuestas), responde `404 {"error":"not_completed"}`.
+4. Devuelve `{"claim_url": "<BADGE_CLAIM_BASE_URL>/claim.html#token=<jws>"}`; la pantalla final muestra
+   "Reclamar mi insignia". El token va en el fragmento de la URL, así que nunca llega a un registro de servidor.
+5. En la página del emisor, la persona escribe nombre y correo; el emisor verifica el token con nuestra llave
+   **pública** y emite la insignia, sin duplicar por `sub` + `badge`.
 
-**Revocation and reissue are done in the issuer admin**, not here. Calling the function again for the same
-completion returns a new token with the same `sub`.
+**La revocación y la reemisión se hacen en el panel del emisor**, no aquí. Llamar otra vez a la función para la
+misma participación devuelve un token nuevo con el mismo `sub`.
 
-The button only appears when all badge secrets are set; otherwise the function answers
-`503 badges_not_configured` and the completion screen shows no badge.
+El botón aparece solo cuando todos los secretos de insignias están configurados; si no, la función responde
+`503 badges_not_configured` y la pantalla final no muestra insignia.
 
-### Contract v1 (compact JWS, EdDSA / Ed25519)
+### Contrato v1 (JWS compacto, EdDSA / Ed25519)
 
-Header: `{"alg":"EdDSA","typ":"JWT","kid":"<BADGE_TOKEN_KID>"}`
+Encabezado: `{"alg":"EdDSA","typ":"JWT","kid":"<BADGE_TOKEN_KID>"}`
 
-| Claim | Value |
+| Claim | Valor |
 |---|---|
 | `iss` | `BADGE_CLIENT_ID` (`card-tree-testing`) |
 | `aud` | `sac-ieee-colombia-badges` |
-| `sub` | `base64url(HMAC-SHA256(BADGE_SUB_HMAC_KEY, "completion:v1:" + participant_id))`, 43 chars, stable per participant + study, no PII |
+| `sub` | `base64url(HMAC-SHA256(BADGE_SUB_HMAC_KEY, "completion:v1:" + participant_id))`, 43 caracteres, estable por participante + estudio, sin datos personales |
 | `badge` | `BADGE_SLUG` (`test-participant`) |
-| `jti` | random UUID per token |
-| `iat`, `exp` | `exp = iat + 30 days` (the issuer rejects longer) |
-| `evidence` | fixed non-PII text (under 200 chars) |
+| `jti` | UUID aleatorio por token |
+| `iat`, `exp` | `exp = iat + 30 días` (el emisor rechaza más) |
+| `evidence` | texto fijo sin datos personales (menos de 200 caracteres) |
 
-Endpoint: `POST <SUPABASE_URL>/functions/v1/completion-token`, body `{"participant_id": "<uuid>"}`.
-Responses: `200 {claim_url}`, `400 invalid_participant_id`, `404 not_completed`, `503 badges_not_configured`,
-`500 internal_error`. Deployed with `verify_jwt = false` (`supabase/config.toml`): the random participant id,
-which the public key can never read, is the bearer secret.
+Endpoint: `POST <SUPABASE_URL>/functions/v1/completion-token`, cuerpo `{"participant_id": "<uuid>"}`.
+Respuestas: `200 {claim_url}`, `400 invalid_participant_id`, `404 not_completed`, `503 badges_not_configured`,
+`500 internal_error`. Se despliega con `verify_jwt = false` (`supabase/config.toml`): el id aleatorio del
+participante, que la llave pública nunca puede leer, funciona como secreto.
 
-Code: `supabase/functions/completion-token/` (`token.ts` is runtime-neutral and unit tested in Node).
+Código: `supabase/functions/completion-token/` (`token.ts` no depende del entorno y se prueba en Node).
 
-### Keys and secrets (one time)
+### Llaves y secretos (una vez)
 
 ```sh
-npm run badge:keygen                                   # writes .secrets/badge.env (git-ignored), prints the PUBLIC JWK
-# edit BADGE_CLAIM_BASE_URL in .secrets/badge.env (issuer GitHub Pages URL)
+npm run badge:keygen                                   # escribe .secrets/badge.env (ignorado por git) e imprime la llave PÚBLICA
+# edita BADGE_CLAIM_BASE_URL en .secrets/badge.env (URL de Pages del emisor)
 npx supabase secrets set --env-file .secrets/badge.env
 ```
 
-| Secret | Purpose |
+| Secreto | Para qué |
 |---|---|
-| `BADGE_TOKEN_PRIVATE_JWK` | Ed25519 private key that signs tokens. Never leaves Supabase secrets and `.secrets/` |
-| `BADGE_TOKEN_KID` | key id, registered in the issuer with the public JWK |
-| `BADGE_SUB_HMAC_KEY` | derives `sub`; changing it changes every `sub` (the issuer would see new people) |
+| `BADGE_TOKEN_PRIVATE_JWK` | llave privada Ed25519 que firma los tokens. Nunca sale de los secretos de Supabase ni de `.secrets/` |
+| `BADGE_TOKEN_KID` | id de la llave, registrado en el emisor junto con la llave pública |
+| `BADGE_SUB_HMAC_KEY` | deriva el `sub`; cambiarla cambia todos los `sub` (el emisor vería personas nuevas) |
 | `BADGE_CLIENT_ID` | `card-tree-testing` |
 | `BADGE_SLUG` | `test-participant` |
-| `BADGE_CLAIM_BASE_URL` | issuer Pages URL |
+| `BADGE_CLAIM_BASE_URL` | URL de Pages del emisor |
 
-Send only the **public** JWK printed by the script to the issuer maintainer (`claim_clients` table).
-Keep a backup of `.secrets/badge.env` in a password manager. To rotate: move the file away, run the script again,
-register the new public key in the issuer, then `secrets set`. Unused tokens signed with the old key stop working
-once the issuer removes that key.
+Envía al responsable del emisor solo la llave **pública** que imprime el script (tabla `claim_clients`).
+Guarda una copia de `.secrets/badge.env` en un gestor de contraseñas. Para rotarla: mueve el archivo, corre el
+script de nuevo, registra la nueva llave pública en el emisor y luego `secrets set`.
 
-## Export results to CSV
+## Exportar a CSV
 
-Run locally with the service role (secret) key. Never commit it or paste it in a workflow.
+Se corre en tu computador con la llave secreta. Nunca la subas al repositorio ni la pegues en un workflow.
 
 ```sh
-SUPABASE_URL=https://<ref>.supabase.co SUPABASE_SERVICE_KEY=<secret> npm run export
+SUPABASE_URL=https://<ref>.supabase.co SUPABASE_SERVICE_KEY=<secreta> npm run export
 ```
 
-Writes `export/card_sort.csv` and `export/tree_test.csv` (UTF-8 with BOM for Excel), with the profile columns on
-every row. Cells starting with `=`, `+`, `-` or `@` are prefixed with `'` so spreadsheets do not run them as formulas.
+Escribe `export/card_sort.csv` y `export/tree_test.csv` (UTF-8 con BOM para Excel), con las columnas del perfil en
+cada fila. Las columnas existentes conservan su orden y las nuevas van **al final**:
 
-## Study files
+| Archivo | Columnas nuevas (al final) |
+|---|---|
+| `card_sort.csv` | `not_understood` (tarjeta no entendida), `guess` (texto opcional "¿Qué crees que significa?"; `group_name` va vacío en esas filas) |
+| `tree_test.csv` | `outcome` (`success`, `failure`, `dont_know`, `skipped`), `confidence` (1-5 o vacío), `skipped` (tarea omitida) |
 
-One file per study in `public/studies/`. The file name is the study id (letters, digits, `-`, `_`), and the
-participant link is `https://<user>.github.io/<repo>/#/s/<study-id>`. The app tries `<id>.json`, then `<id>.csv`.
-A broken file shows the exact validation error on that link.
+En las filas de "no sé" y "omitida", `correct`, `selected_node_id` y `selected_label` van vacíos: nunca cuentan como
+éxito ni como error. Las tareas abandonadas no tienen fila; el panel las cuenta (ver `docs/metricas.md`).
+Las celdas que empiezan con `=`, `+`, `-` o `@` llevan `'` delante para que una hoja de cálculo no las ejecute.
+
+## Panel de análisis
+
+```sh
+SUPABASE_URL=https://<ref>.supabase.co SUPABASE_SERVICE_KEY=<secreta> npm run report
+```
+
+Genera `export/report.html`: un solo archivo, sin conexión, que se abre en el navegador. Contiene los datos, así
+que trátalo como el CSV (no lo publiques). Para ver datos nuevos, vuelve a generarlo. Incluye:
+
+- **Filtro por perfil** (cargo, grado de membresía, experiencia como directivo, uso previo de la wiki, años en
+  IEEE), aplicado a todas las métricas. Por ejemplo, "No soy miembro" frente a "Student Member".
+- **Card sorting**: % de "No sé qué significa" por tarjeta, ranking de las más no entendidas con sus suposiciones,
+  matriz de similitud y dendrograma (enlace promedio) sin las tarjetas no entendidas, con aviso de cuántas marcas
+  se excluyeron.
+- **Tree testing**: por tarea, por separado, éxito, éxito directo, fallo, "no sé", omitida y abandono, cada uno con
+  su base explícita, y la confianza promedio.
+
+Las fórmulas están en [docs/metricas.md](docs/metricas.md) y en `src/analysis.ts`.
+
+## Archivos de estudio
+
+Un archivo por estudio en `public/studies/`. El nombre del archivo es el id del estudio (letras, números, `-`, `_`),
+y el enlace para participantes es `https://<usuario>.github.io/<repo>/#/s/<id>`. La aplicación busca `<id>.json` y
+luego `<id>.csv`. Si un archivo tiene errores, el enlace muestra el error exacto.
 
 ### JSON
 
 ```json
-{ "kind": "card_sort", "title": "…", "intro": "Optional, one paragraph per line",
-  "consent": "Optional, replaces the default consent text",
+{ "kind": "card_sort", "title": "…", "intro": "Opcional, un párrafo por línea",
+  "consent": "Opcional, reemplaza el texto de consentimiento por defecto",
   "cards": [{ "id": "c1", "label": "Becas y premios" }] }
 ```
 
@@ -257,62 +305,72 @@ A broken file shows the exact validation error on that link.
   "tasks": [{ "id": "t1", "text": "¿Dónde renovarías tu membresía?", "correct": ["mem-ren"] }] }
 ```
 
-### Split link (A/B test)
+### Enlace A/B (split)
 
-One shared link that sends each participant to one of several studies at random (equal chance per browser,
-not balanced). The choice is remembered in that browser, so a reload never shows the other variant.
-The stored `study_id` is the variant, so results can be compared directly.
+Un enlace compartido que manda a cada participante a uno de varios estudios al azar (misma probabilidad por
+navegador, sin balancear). La elección queda recordada en ese navegador, así que al recargar nunca ve la otra
+variante. El `study_id` guardado es la variante, así que los resultados se comparan directamente.
 
 ```json
 { "kind": "split", "variants": ["arbol-a", "arbol-b"] }
 ```
 
-Give both variants the same title and intro so participants cannot tell which one they got. To try a specific
-variant yourself, open its own link (`#/s/arbol-a`), or the split link in a private window to draw again.
+Usa el mismo título e introducción en ambas variantes para que no se note cuál le tocó. Para probar una variante
+específica, abre su propio enlace (`#/s/arbol-a`), o el enlace A/B en una ventana privada para sortear de nuevo.
 
 ### CSV
 
-Columns `type,id,parent,text,correct` (`,` or `;` separator; "CSV UTF-8" from Excel works).
+Columnas `type,id,parent,text,correct` (separador `,` o `;`; sirve el "CSV UTF-8" de Excel).
 
 | type | id | parent | text | correct |
 |---|---|---|---|---|
-| `title` | | | Study title | |
-| `intro` | | | Intro text | |
-| `consent` | | | Consent text (optional) | |
-| `hesitation_ms` | | | `10000` (tree test, optional) | |
-| `card` | card id | | Card label | |
-| `node` | node id | parent node id, empty for top level | Node label | |
-| `task` | task id | | Task text | correct node ids separated by `\|` |
+| `title` | | | Título del estudio | |
+| `intro` | | | Texto de introducción | |
+| `consent` | | | Texto de consentimiento (opcional) | |
+| `hesitation_ms` | | | `10000` (tree test, opcional) | |
+| `card` | id de la tarjeta | | Texto de la tarjeta | |
+| `node` | id del nodo | id del padre, vacío en el primer nivel | Texto del nodo | |
+| `task` | id de la tarea | | Texto de la tarea | ids de los nodos correctos separados por `\|` |
 
-A file with `card` rows is a card sort; with `node` rows, a tree test.
+Un archivo con filas `card` es un card sort; con filas `node`, un tree test.
 
-Limits (enforced on load so answers are never rejected on submit): ids 100 chars, labels 300, task text 1000.
+Límites (se validan al cargar, para que ninguna respuesta se rechace al guardar): ids 100 caracteres, textos 300,
+texto de tarea 1000.
 
-## Current studies
+## Estudios actuales
 
-Built from the wiki's `mkdocs.yml` and `VALIDACION.md` (IEEEStudentsHandbook repo), 2026-11-19.
+Construidos a partir de `mkdocs.yml` y `VALIDACION.md` de la wiki (repositorio IEEEStudentsHandbook), 2026-11-19.
 
-| Link | File | What |
+| Enlace | Archivo | Qué es |
 |---|---|---|
-| `#/s/tarjetas-wiki` | `tarjetas-wiki.json` | Open card sort, 35 cards: every content page of the new structure plus "¿Qué es IEEE?" (card id = page path) |
-| `#/s/arbol-wiki` | `arbol-wiki.json` | Split link: half go to `arbol-a`, half to `arbol-b` |
-| (variant) | `arbol-a.csv` | **New** navigation (wiki commits 6624dcb, e6495b0): 44 nodes, 10 sections |
-| (variant) | `arbol-b.csv` | **Old** navigation (baseline, wiki commit 8fd2d80): 34 nodes, 4 sections |
+| `#/s/tarjetas-wiki` | `tarjetas-wiki.json` | Card sort abierto, 35 tarjetas: cada página de contenido de la estructura nueva más "¿Qué es IEEE?" (id de tarjeta = ruta de la página) |
+| `#/s/arbol-wiki` | `arbol-wiki.json` | Enlace A/B: la mitad va a `arbol-a` y la otra mitad a `arbol-b` |
+| (variante) | `arbol-a.csv` | Navegación **nueva** (commits de la wiki 6624dcb, e6495b0): 44 nodos, 10 secciones |
+| (variante) | `arbol-b.csv` | Navegación **anterior** (línea base, commit 8fd2d80 de la wiki): 34 nodos, 4 secciones |
 
-Both trees share the same 13 tasks, numbered as in `VALIDACION.md` (`t01` to `t14`). Task 9 ("create an Affinity
-Group") is left out because the old tree has no correct answer for it, which would bias the comparison.
-Section nodes count as answers because in the wiki each section is its own overview page. The wiki's home page
-("Inicio") is not a node. Targets from `VALIDACION.md`: at least 80% success and 60% direct (no backtracking).
+Ambos árboles comparten las mismas 13 tareas, numeradas como en `VALIDACION.md` (`t01` a `t14`). La tarea 9 ("crear
+un Grupo de Afinidad") se dejó fuera porque el árbol anterior no tiene respuesta correcta y sesgaría la comparación.
+Los nodos de sección cuentan como respuesta porque en la wiki cada sección es su propia página de resumen. La página
+de inicio de la wiki no es un nodo. Metas de `VALIDACION.md`: al menos 80% de éxito y 60% de éxito directo.
 
-Recruit separate people for the card sort and the tree test: seeing the card labels first would prime the tree
-test in favor of the new structure.
+Recluta personas distintas para el card sort y para el tree test: ver primero los textos de las tarjetas
+predispone el tree test a favor de la estructura nueva.
 
-## Recorded data
+## Datos registrados
 
-- **Card sort** (`card_sort_placements`): one row per card with the participant's group name.
-  Card and task order are shuffled per participant.
-- **Tree test** (`tree_test_results`): one row per task.
-  - `path`: every node visited in order, including parents revisited with "Volver" (`Inicio` at the top level).
-  - `backtracked` / `backtrack_count`: pressed "Volver" at least once / how many times.
-  - `hesitated`: time to first click was strictly greater than `hesitation_ms` (default 10 s).
-  - `correct`: the chosen node is one of the task's `correct` ids.
+- **Card sort** (`card_sort_placements`): una fila por tarjeta, con el nombre del grupo que le dio el participante.
+  - `not_understood`: marcó "No sé qué significa". Esas filas no tienen grupo (`group_name` nulo).
+  - `guess`: respuesta opcional a "¿Qué crees que significa?" (máximo 200 caracteres). No se muestra ninguna
+    definición: una ayuda invalidaría la medición.
+  - El orden de las tarjetas y de las tareas se mezcla para cada participante.
+- **Tree test** (`tree_test_results`): una fila por tarea, guardada al terminarla.
+  - `outcome`: `success` (eligió un nodo correcto), `failure` (eligió otro nodo), `dont_know` ("No sé dónde
+    buscaría esto") o `skipped` ("Esta tarea no aplica a mi rol"). En filas anteriores a esta versión viene nulo
+    y se deriva de `correct`.
+  - `correct`: el nodo elegido es uno de los correctos. Nulo en `dont_know` y `skipped`.
+  - `confidence`: confianza de 1 a 5, opcional, solo cuando eligió un nodo.
+  - `path`: cada nodo visitado en orden, incluidos los padres a los que volvió con "Volver" (`Inicio` en el primer nivel).
+  - `backtracked` / `backtrack_count`: usó "Volver" al menos una vez / cuántas veces.
+  - `hesitated`: el tiempo hasta el primer clic fue mayor que `hesitation_ms` (10 s por defecto).
+- **Marca de fin** (`completions`): una fila cuando el participante termina el estudio. Quien empezó y no la tiene
+  abandonó; las tareas sin fila de esa persona cuentan como abandono.

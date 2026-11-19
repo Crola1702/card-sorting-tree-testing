@@ -141,3 +141,16 @@ form .primary { margin-top: .5rem; }
 .tree button::after { content: "›"; float: right; color: var(--muted); }
 .tree button:hover { background: var(--surface); color: var(--primary); }
 .actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+
+/* "No sé qué significa": acción por tarjeta y zona aparte, sin arrastre. */
+.card { grid-template-columns: 1fr; }
+.card-actions { display: flex; justify-content: space-between; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.card-actions button.link { font-size: .875rem; }
+.group.unknown { background: var(--bg); border-style: dashed; border-color: var(--control-line); }
+.unknown-card { grid-template-columns: 1fr auto; border-left-color: var(--muted); cursor: default; }
+.unknown-card input { grid-column: 1 / -1; min-height: 40px; font-size: .9rem; }
+
+/* Tree testing: abstenerse siempre visible, separado de las acciones principales. */
+.actions.abstain { border-top: 1px solid var(--line); padding-top: 1rem; align-items: center; }
+.scale { display: grid; gap: .25rem; }
+.scale label.inline { margin-right: 0; }

@@ -22,7 +22,7 @@ export const STUDY_ID = /^[A-Za-z0-9_-]{1,64}$/;
 export const DEFAULT_CONSENT = [
   'Este estudio busca mejorar cómo se organiza la información para estudiantes de IEEE. Participar es voluntario.',
   'Qué guardamos: tu cargo actual en IEEE, tus años en IEEE, tu grado de membresía, si eres o has sido directivo, si habías usado la wiki y tus respuestas a la actividad. No pedimos tu nombre, correo ni otros datos de contacto, y no vinculamos tus respuestas con tu identidad.',
-  'Nada se guarda hasta que termines. Puedes salir en cualquier momento cerrando esta página.',
+  'Guardamos tus respuestas a medida que avanzas. Puedes salir en cualquier momento cerrando esta página; se conserva solo lo que alcanzaste a responder.',
   'Si al final se ofrece una insignia digital, reclamarla es opcional y se hace en otra página, que pedirá tu nombre y correo por separado. Esa página no recibe tus respuestas.',
   'Los resultados se analizan en conjunto y solo los ve el equipo organizador. Si tienes preguntas, escribe a quien te compartió el enlace.',
 ].join('\n');

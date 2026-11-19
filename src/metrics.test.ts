@@ -63,10 +63,36 @@ test('buildPlacements requires every card grouped and named groups, ignores empt
       { key: 'g3', name: 'Agenda', cardIds: ['c2'] },
     ], labels),
     [
-      { group_name: 'Apoyo', card_id: 'c1', card_label: 'Becas' },
-      { group_name: 'Agenda', card_id: 'c2', card_label: 'Eventos' },
+      { group_name: 'Apoyo', card_id: 'c1', card_label: 'Becas', not_understood: false, guess: null },
+      { group_name: 'Agenda', card_id: 'c2', card_label: 'Eventos', not_understood: false, guess: null },
     ],
   );
+});
+
+test('"no sé" and "omitida" end the task with no node, no correct flag and their own outcome', () => {
+  const back: NavStep[] = [{ node: act, back: false, at: 300 }, { node: root, back: true, at: 600 }];
+  const dk = scoreTask(task, back, 'dont_know', 0, 1_000, 10_000);
+  assert.deepEqual([dk.outcome, dk.correct, dk.selected_node_id, dk.selected_label, dk.confidence], ['dont_know', null, null, null, null]);
+  assert.deepEqual(dk.path_ids, ['act', '(inicio)']);
+  assert.equal(dk.backtrack_count, 1);
+  const skip = scoreTask(task, [], 'skipped', 0, 2_000, 10_000);
+  assert.deepEqual([skip.outcome, skip.correct, skip.path_ids.length, skip.time_to_first_click_ms, skip.duration_ms], ['skipped', null, 0, 2_000, 2_000]);
+  assert.equal(scoreTask(task, [], cer, 0, 1, 10_000).outcome, 'success');
+  assert.equal(scoreTask(task, [], act, 0, 1, 10_000).outcome, 'failure');
+});
+
+test('buildPlacements stores "no sé" cards without a group, with an optional trimmed guess', () => {
+  const labels = new Map([['c1', 'Becas'], ['c2', 'Rebate']]);
+  const rows = buildPlacements([], [{ key: 'g1', name: 'Apoyo', cardIds: ['c1'] }], labels, new Map([['c2', '  dinero  ']]));
+  assert.deepEqual(rows, [
+    { group_name: 'Apoyo', card_id: 'c1', card_label: 'Becas', not_understood: false, guess: null },
+    { group_name: null, card_id: 'c2', card_label: 'Rebate', not_understood: true, guess: 'dinero' },
+  ]);
+  // Todas marcadas: se puede enviar sin ningún grupo, y una suposición vacía se guarda como null.
+  assert.deepEqual(buildPlacements([], [], labels, new Map([['c1', ''], ['c2', 'x'.repeat(250)]])), [
+    { group_name: null, card_id: 'c1', card_label: 'Becas', not_understood: true, guess: null },
+    { group_name: null, card_id: 'c2', card_label: 'Rebate', not_understood: true, guess: 'x'.repeat(200) },
+  ]);
 });
 
 test('CSV export quotes, escapes formulas and keeps numbers/booleans intact', () => {

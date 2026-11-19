@@ -99,7 +99,7 @@ function profileForm(): Promise<Profile> {
   });
 }
 
-// Optional badge: the Edge Function checks completion in the DB and returns a signed claim link.
+// Optional badge: the Edge Function checks the completion mark in the DB and returns a signed claim link.
 // Any failure (not configured, offline) just hides the button.
 async function claimUrl(participant_id: string): Promise<string | undefined> {
   try {
@@ -129,31 +129,21 @@ function thanks(claim?: string) {
   );
 }
 
-// Inserts the participant, then all results in a single statement. On retry, a duplicate
-// participant (23505) means the first insert already succeeded, so it is not an error.
-async function submit(study: Study, profile: Profile, table: string, rows: object[]) {
-  const participant_id = crypto.randomUUID();
-  const save = async () => {
-    const p = await db.from('participants').insert({ id: participant_id, study_id: study.id, ...profile });
-    if (p.error && p.error.code !== '23505') throw p.error;
-    const r = await db.from(table).insert(rows.map((row) => ({ ...row, participant_id, study_id: study.id })));
-    if (r.error) throw r.error;
-  };
+// Guardado progresivo: el perfil al empezar, cada tarea al terminarla y una marca de fin al final.
+// Así se puede medir el abandono. Si falla la red, se ofrece reintentar sin perder lo respondido.
+// Un 23505 (clave duplicada) significa que un intento anterior ya lo guardó, así que no es error.
+async function persist(table: string, rows: object | object[]) {
   for (;;) {
-    message('Guardando tus respuestas…', 'No cierres esta página.');
-    try {
-      await save();
-      return thanks(await claimUrl(participant_id));
-    } catch (e) {
-      console.error(e);
-      await new Promise<void>((retry) =>
-        show(
-          h('h1', { textContent: 'No pudimos guardar tus respuestas' }),
-          h('p', { textContent: 'Revisa tu conexión a internet y vuelve a intentarlo. Tus respuestas siguen en esta página.' }),
-          h('button', { type: 'button', className: 'primary', textContent: 'Reintentar', onclick: () => retry() }),
-        ),
-      );
-    }
+    const { error } = await db.from(table).insert(rows);
+    if (!error || error.code === '23505') return;
+    console.error(error);
+    await new Promise<void>((retry) =>
+      show(
+        h('h1', { textContent: 'No pudimos guardar tu respuesta' }),
+        h('p', { textContent: 'Revisa tu conexión a internet y vuelve a intentarlo. Lo que respondiste sigue en esta página.' }),
+        h('button', { type: 'button', className: 'primary', textContent: 'Reintentar', onclick: () => retry() }),
+      ),
+    );
   }
 }
 
@@ -169,8 +159,20 @@ async function main() {
   document.title = study.title;
   await intro(study);
   const profile = await profileForm();
-  if (study.kind === 'card_sort') await submit(study, profile, 'card_sort_placements', await runCardSort(study));
-  else await submit(study, profile, 'tree_test_results', await runTreeTest(study));
+
+  const participant_id = crypto.randomUUID();
+  const tag = (row: object) => ({ ...row, participant_id, study_id: study.id });
+  await persist('participants', { id: participant_id, study_id: study.id, ...profile });
+  if (study.kind === 'card_sort') {
+    const rows = await runCardSort(study);
+    message('Guardando tus respuestas…', 'No cierres esta página.');
+    await persist('card_sort_placements', rows.map(tag));
+  } else {
+    await runTreeTest(study, (result) => persist('tree_test_results', tag(result)));
+    message('Guardando tus respuestas…', 'No cierres esta página.');
+  }
+  await persist('completions', { participant_id });
+  thanks(await claimUrl(participant_id));
 }
 
 window.addEventListener('hashchange', () => location.reload());
