@@ -14,16 +14,25 @@ const db = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_
   auth: { persistSession: false },
 });
 
-type Profile = { department: string; years_in_ieee: number; was_branch_officer: boolean };
+type Profile = { role: string; years_in_ieee: number; member_grade: string; officer_experience: boolean; wiki_use: string };
 
-// Must match participants_department_check in supabase/migrations/20261119020000_department.sql.
-export const DEPARTMENTS = [
-  'Amazonas', 'Antioquia', 'Arauca', 'Atlántico', 'Bogotá D.C.', 'Bolívar', 'Boyacá', 'Caldas', 'Caquetá',
-  'Casanare', 'Cauca', 'Cesar', 'Chocó', 'Córdoba', 'Cundinamarca', 'Guainía', 'Guaviare', 'Huila',
-  'La Guajira', 'Magdalena', 'Meta', 'Nariño', 'Norte de Santander', 'Putumayo', 'Quindío', 'Risaralda',
-  'San Andrés y Providencia', 'Santander', 'Sucre', 'Tolima', 'Valle del Cauca', 'Vaupés', 'Vichada',
-  'Prefiero no decirlo',
+// Must match the CHECK constraints in supabase/migrations/20261119030000_profile_v2.sql.
+const ROLES = [
+  'Sin cargo',
+  'Directivo de Rama (presidente, vicepresidente o secretario)',
+  'Tesorero de Rama',
+  'Directivo de Capítulo o Grupo de Afinidad',
+  'Consejero de Rama',
+  'Otro',
 ];
+const GRADES = ['Student Member', 'Graduate Student Member', 'Member', 'Otro grado', 'No soy miembro', 'No lo sé'];
+const WIKI_USE = ['Nunca', 'Una o dos veces', 'Varias veces'];
+
+const choice = (id: string, placeholder: string, options: string[]) =>
+  h('select', { id, required: true },
+    h('option', { value: '', textContent: placeholder }),
+    ...options.map((o) => h('option', { value: o, textContent: o })),
+  );
 
 function message(title: string, body: string) {
   show(h('h1', { textContent: title }), h('p', { textContent: body }));
@@ -52,27 +61,38 @@ function intro(study: Study): Promise<void> {
 
 function profileForm(): Promise<Profile> {
   return new Promise((resolve) => {
-    const department = h('select', { id: 'department', required: true },
-      h('option', { value: '', textContent: 'Elige tu departamento' }),
-      ...DEPARTMENTS.map((d) => h('option', { value: d, textContent: d })),
-    );
+    const role = choice('role', 'Elige tu cargo', ROLES);
     const years = h('input', { id: 'years', type: 'number', inputMode: 'numeric', min: '0', max: '70', step: '1', required: true });
-    const yes = h('input', { type: 'radio', name: 'officer', value: 'yes', id: 'officer-yes', required: true });
-    const no = h('input', { type: 'radio', name: 'officer', value: 'no', id: 'officer-no' });
+    const grade = choice('grade', 'Elige tu grado', GRADES);
+    const officerYes = h('input', { type: 'radio', name: 'officer', value: 'yes', id: 'officer-yes', required: true });
+    const officerNo = h('input', { type: 'radio', name: 'officer', value: 'no', id: 'officer-no' });
+    const wikiUse = WIKI_USE.map((value, i) =>
+      h('input', { type: 'radio', name: 'wiki-use', value, id: `wiki-use-${i}`, required: true }));
     show(
       h('h1', { textContent: 'Antes de empezar' }),
       h('form', {
         onsubmit: (e: SubmitEvent) => {
           e.preventDefault();
-          resolve({ department: department.value, years_in_ieee: Number(years.value), was_branch_officer: yes.checked });
+          resolve({
+            role: role.value,
+            years_in_ieee: Number(years.value),
+            member_grade: grade.value,
+            officer_experience: officerYes.checked,
+            wiki_use: wikiUse.find((r) => r.checked)!.value,
+          });
         },
       },
-        h('label', { htmlFor: 'department', textContent: 'Departamento donde estudias o trabajas' }), department,
+        h('label', { htmlFor: 'role', textContent: 'Tu cargo actual principal en IEEE' }), role,
         h('label', { htmlFor: 'years', textContent: 'Años en IEEE' }), years,
+        h('label', { htmlFor: 'grade', textContent: 'Grado de membresía IEEE' }), grade,
         h('fieldset', {},
-          h('legend', { textContent: '¿Has sido directivo de una rama estudiantil?' }),
-          h('label', { className: 'inline' }, yes, ' Sí'),
-          h('label', { className: 'inline' }, no, ' No'),
+          h('legend', { textContent: '¿Eres o has sido directivo en IEEE (Rama, Capítulo o Grupo de Afinidad)?' }),
+          h('label', { className: 'inline' }, officerYes, ' Sí'),
+          h('label', { className: 'inline' }, officerNo, ' No'),
+        ),
+        h('fieldset', {},
+          h('legend', { textContent: '¿Habías usado antes la wiki de Ramas Estudiantiles IEEE Colombia?' }),
+          ...wikiUse.map((r, i) => h('label', { className: 'inline' }, r, ` ${WIKI_USE[i]}`)),
         ),
         h('button', { className: 'primary', textContent: 'Continuar' }),
       ),

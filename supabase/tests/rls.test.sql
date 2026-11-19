@@ -4,8 +4,8 @@ select plan(16);
 set local role anon;
 
 select lives_ok(
-  $$insert into public.participants (id, study_id, department, years_in_ieee, was_branch_officer)
-    values ('00000000-0000-0000-0000-000000000001', 'demo', 'Antioquia', 2, false)$$,
+  $$insert into public.participants (id, study_id, role, years_in_ieee, member_grade, officer_experience, wiki_use)
+    values ('00000000-0000-0000-0000-000000000001', 'demo', 'Tesorero de Rama', 2, 'Student Member', true, 'Nunca')$$,
   'anon can insert a participant');
 
 select lives_ok(
@@ -28,13 +28,13 @@ select throws_ok($$select * from public.export_tree_test$$, '42501', null, 'anon
 select throws_ok($$update public.participants set years_in_ieee = 9$$, '42501', null, 'anon cannot update');
 select throws_ok($$delete from public.participants$$, '42501', null, 'anon cannot delete');
 select throws_ok(
-  $$insert into public.participants (id, study_id, department, years_in_ieee, was_branch_officer)
-    values (gen_random_uuid(), 'demo', 'Caldas', 200, true)$$,
+  $$insert into public.participants (id, study_id, role, years_in_ieee, member_grade, officer_experience, wiki_use)
+    values (gen_random_uuid(), 'demo', 'Sin cargo', 200, 'Member', false, 'Nunca')$$,
   '23514', null, 'check constraints reject invalid data');
 select throws_ok(
-  $$insert into public.participants (id, study_id, department, years_in_ieee, was_branch_officer)
-    values (gen_random_uuid(), 'demo', 'Sección Perú', 1, true)$$,
-  '23514', null, 'only Colombian departments are accepted');
+  $$insert into public.participants (id, study_id, role, years_in_ieee, member_grade, officer_experience, wiki_use)
+    values (gen_random_uuid(), 'demo', 'Presidente del universo', 1, 'Member', true, 'Nunca')$$,
+  '23514', null, 'only listed roles are accepted');
 
 select lives_ok($$select public.ping()$$, 'anon can call the keepalive ping');
 
@@ -42,8 +42,8 @@ reset role;
 set local role authenticated;
 select throws_ok($$select * from public.participants$$, '42501', null, 'authenticated cannot read');
 select throws_ok(
-  $$insert into public.participants (id, study_id, department, years_in_ieee, was_branch_officer)
-    values (gen_random_uuid(), 'demo', 'Meta', 1, false)$$,
+  $$insert into public.participants (id, study_id, role, years_in_ieee, member_grade, officer_experience, wiki_use)
+    values (gen_random_uuid(), 'demo', 'Sin cargo', 1, 'Member', false, 'Nunca')$$,
   '42501', null, 'authenticated cannot insert');
 
 reset role;
