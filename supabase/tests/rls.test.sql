@@ -1,5 +1,5 @@
 begin;
-select plan(14);
+select plan(15);
 
 set local role anon;
 
@@ -31,6 +31,8 @@ select throws_ok(
   $$insert into public.participants (id, study_id, country_or_section, years_in_ieee, was_branch_officer)
     values (gen_random_uuid(), 'demo', 'Perú', 200, true)$$,
   '23514', null, 'check constraints reject invalid data');
+
+select lives_ok($$select public.ping()$$, 'anon can call the keepalive ping');
 
 reset role;
 set local role authenticated;

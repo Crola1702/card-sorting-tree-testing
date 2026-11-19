@@ -37,6 +37,12 @@ for (const [name, key] of keys) {
     assert.equal(error?.code, '42501', `leaked ${JSON.stringify(data)}`);
   });
 
+  test(`${name} key: keepalive ping succeeds and returns only a timestamp`, async () => {
+    const { data, error } = await db.rpc('ping');
+    assert.equal(error, null);
+    assert.ok(!Number.isNaN(Date.parse(data)), `unexpected ${JSON.stringify(data)}`);
+  });
+
   test(`${name} key: cannot update or delete`, async () => {
     assert.equal((await db.from('participants').update({ years_in_ieee: 9 }).eq('id', id)).error?.code, '42501');
     assert.equal((await db.from('participants').delete().eq('id', id)).error?.code, '42501');

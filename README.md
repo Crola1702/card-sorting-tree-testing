@@ -15,6 +15,7 @@ Participant flow: intro + consent → profile (country/section, years in IEEE, b
 - [Deploy](#deploy)
 - [Modify the app](#modify-the-app)
 - [Tests](#tests)
+- [Operations: keepalive and pausing](#operations-keepalive-and-pausing)
 - [Badge claim (open-badges-ieee)](#badge-claim-open-badges-ieee)
 - [Export results to CSV](#export-results-to-csv)
 - [Study files](#study-files)
@@ -139,6 +140,25 @@ npm run test:api
 ```
 
 The GraphQL check is reported as *skipped* unless `pg_graphql` is enabled locally; CI enables it.
+
+## Operations: keepalive and pausing
+
+Free Supabase projects pause after low activity over a 7-day period (Supabase docs: a few daily requests avoid
+it). `.github/workflows/keepalive.yml` runs daily and calls `public.ping()`, a function that only returns the
+server time, with the public key. If the call fails, the run fails and GitHub emails the repository owner.
+
+Run it by hand: Actions → *Keep Supabase awake* → *Run workflow*, or `gh workflow run keepalive.yml`.
+
+**GitHub disables scheduled workflows in a public repository after 60 days without repository activity.**
+The Actions tab then shows a banner on the workflow. Re-enable it with *Enable workflow* or
+`gh workflow enable keepalive.yml`; any push also counts as activity.
+
+### If the project was paused anyway
+
+1. Supabase Dashboard → the organization → the paused project → **Resume project**, and confirm.
+   It comes back with its data and configuration. The docs give a restore window of up to one year after pausing.
+2. Check the keepalive workflow is enabled (above) and run it once by hand.
+3. Open a study link and confirm it loads; the participants' answers saved before the pause are still there.
 
 ## Badge claim (open-badges-ieee)
 
