@@ -14,6 +14,8 @@ const db = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_
   auth: { persistSession: false },
 });
 
+const WIKI_URL = 'https://colombia-sac-team-2026.github.io/IEEEStudentsHandbook/';
+
 type Profile = { role: string; years_in_ieee: number; member_grade: string; officer_experience: boolean; wiki_use: string };
 
 // Must match the CHECK constraints in supabase/migrations/20261119030000_profile_v2.sql (roles: 20261119040000_roles_v2.sql).
@@ -125,6 +127,12 @@ function thanks(claim?: string) {
           ),
         ]
       : []),
+    // Solo al final: mostrar la wiki antes de la actividad sesgaría las respuestas.
+    h('section', { className: 'consent' },
+      h('h2', { textContent: 'Conoce la wiki' }),
+      h('p', { textContent: 'Si quieres, explora por tu cuenta la wiki de Ramas Estudiantiles IEEE Colombia.' }),
+      h('a', { className: 'button', href: WIKI_URL, target: '_blank', rel: 'noopener noreferrer', textContent: 'Ir a la wiki' }),
+    ),
     h('p', { className: 'muted', textContent: 'Ya puedes cerrar esta página.' }),
   );
 }

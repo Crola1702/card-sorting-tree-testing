@@ -118,7 +118,7 @@ columnas que aún no existen.
 
 | Para cambiar… | Edita | Luego |
 |---|---|---|
-| Textos de la interfaz | `src/main.ts`, `src/cardsort.ts`, `src/treetest.ts` | `npm run dev` y revisa en una ventana del tamaño de un celular |
+| Textos de la interfaz (y el enlace a la wiki de la pantalla final, `WIKI_URL`) | `src/main.ts`, `src/cardsort.ts`, `src/treetest.ts` | `npm run dev` y revisa en una ventana del tamaño de un celular |
 | Texto de consentimiento por defecto | `DEFAULT_CONSENT` en `src/study.ts` | que siga diciendo la verdad sobre lo que se guarda |
 | Cómo se califica cada respuesta | `src/metrics.ts` | actualiza `src/metrics.test.ts` |
 | Métricas del panel | `src/analysis.ts` y `scripts/report-template.html` | actualiza `src/analysis.test.ts` y `docs/metricas.md` |
